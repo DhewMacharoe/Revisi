@@ -1,0 +1,64 @@
+<?php
+
+// Script untuk memeriksa symlink storage
+// Simpan file ini di root project dan jalankan dengan: php check_symlink.php
+
+require __DIR__ . '/vendor/autoload.php';
+$app = require_once __DIR__ . '/bootstrap/app.php';
+$app->make('Illuminate\Contracts\Console\Kernel')->bootstrap();
+
+echo "Memeriksa symlink storage...\n\n";
+
+// Path fisik ke direktori storage/app/public
+$storagePath = storage_path('app/public');
+echo "Path fisik storage: {$storagePath}\n";
+
+// Path fisik ke direktori public/storage
+$publicPath = public_path('storage');
+echo "Path fisik public: {$publicPath}\n";
+
+// Periksa apakah symlink ada
+if (file_exists($publicPath)) {
+    echo "Symlink ada: Ya\n";
+    
+    // Periksa apakah symlink mengarah ke direktori yang benar
+    $target = readlink($publicPath);
+    echo "Symlink mengarah ke: {$target}\n";
+    
+    if ($target == $storagePath || realpath($target) == $storagePath) {
+        echo "Status: BENAR - Symlink mengarah ke direktori yang benar\n";
+    } else {
+        echo "Status: SALAH - Symlink mengarah ke direktori yang salah\n";
+        echo "Seharusnya mengarah ke: {$storagePath}\n";
+        
+        echo "\nMenghapus symlink yang salah...\n";
+        unlink($publicPath);
+        
+        echo "Membuat symlink baru...\n";
+        symlink($storagePath, $publicPath);
+        
+        echo "Symlink baru dibuat. Silakan periksa kembali.\n";
+    }
+} else {
+    echo "Symlink ada: Tidak\n";
+    echo "Membuat symlink baru...\n";
+    
+    symlink($storagePath, $publicPath);
+    
+    echo "Symlink baru dibuat. Silakan periksa kembali.\n";
+}
+
+// Periksa apakah direktori menu ada
+$menuPath = storage_path('app/public/menu');
+if (!file_exists($menuPath)) {
+    echo "\nMembuat direktori menu...\n";
+    mkdir($menuPath, 0755, true);
+    echo "Direktori menu dibuat: {$menuPath}\n";
+}
+
+// Periksa permissions
+echo "\nMemeriksa permissions...\n";
+echo "Storage permissions: " . substr(sprintf('%o', fileperms($storagePath)), -4) . "\n";
+echo "Public permissions: " . substr(sprintf('%o', fileperms($publicPath)), -4) . "\n";
+
+echo "\nSelesai.\n";
