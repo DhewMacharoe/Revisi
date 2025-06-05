@@ -1,7 +1,8 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 
-const String baseUrl = 'https://delbites.d4trpl-itdel.id';
+const String baseUrl = 'http://localhost';
 
 class MenuService {
   static Future<List<Map<String, String>>> fetchMenu() async {
@@ -26,6 +27,4 @@ class MenuService {
       throw Exception('Gagal memuat menu');
     }
   }
-
-  
 }

@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AdminService {
-  final String _baseUrl = 'https://delbites.d4trpl-itdel.id';
+  final String _baseUrl = 'http://localhost';
 
   // Get all admins
   Future<List<dynamic>> fetchAdmins() async {

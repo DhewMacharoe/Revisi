@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http; // Import untuk panggilan API
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String baseUrl = 'https://delbites.d4trpl-itdel.id'; // Base URL API Anda
+const String baseUrl = 'http://localhost'; // Base URL API Anda
 
 class MainScreen extends StatefulWidget {
   const MainScreen({Key? key}) : super(key: key);

@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String baseUrl = 'https://delbites.d4trpl-itdel.id';
+const String baseUrl = 'http://localhost';
 
 class CheckoutPage extends StatefulWidget {
   final List<Map<String, dynamic>> pesanan;
@@ -562,7 +562,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                       ListTile(
                                         leading: item['image'] != null
                                             ? Image.network(
-                                                'https://delbites.d4trpl-itdel.id/storage/${item['image']}',
+                                                'http://localhost/storage/${item['image']}',
                                                 width: 40,
                                                 height: 40,
                                                 fit: BoxFit.cover,

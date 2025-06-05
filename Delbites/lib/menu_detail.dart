@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String baseUrl = 'https://delbites.d4trpl-itdel.id';
+const String baseUrl = 'http://localhost';
 
 class MenuDetail extends StatefulWidget {
   final String name;

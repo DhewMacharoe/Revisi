@@ -1,14 +1,11 @@
-import 'package:Delbites/home.dart';
+import 'package:Delbites/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:webview_flutter/webview_flutter.dart';
-import 'dart:convert';
-import 'package:Delbites/main_screen.dart';
 
-// const String baseUrl = 'https://delbites.d4trpl-itdel.id';
+// const String baseUrl = 'http://localhost';
 const String baseUrl = 'http://127.0.0.1:8000';
-
 
 class MidtransPaymentPage extends StatefulWidget {
   final String redirectUrl;
@@ -101,7 +98,6 @@ class _MidtransPaymentPageState extends State<MidtransPaymentPage> {
         builder: (_) => const MainScreen(),
         settings: const RouteSettings(arguments: 0), // ke tab Home
       ),
-
     );
   }
 
@@ -121,7 +117,6 @@ class _MidtransPaymentPageState extends State<MidtransPaymentPage> {
         builder: (_) => const MainScreen(),
         settings: const RouteSettings(arguments: 0),
       ),
-
     );
   }
 

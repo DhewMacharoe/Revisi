@@ -1,9 +1,10 @@
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class PelangganService {
-  final String _baseUrl = 'https://delbites.d4trpl-itdel.id/api/pelanggan';
+  final String _baseUrl = 'http://localhost/api/pelanggan';
 
   Future<List<dynamic>> fetchPelanggan() async {
     final response = await http.get(Uri.parse('$_baseUrl/pelanggan'));
@@ -30,7 +31,7 @@ class PelangganService {
     required String telepon,
     required String deviceId,
   }) async {
-    final url = Uri.parse('https://delbites.d4trpl-itdel.id/api/pelanggan');
+    final url = Uri.parse('http://localhost/api/pelanggan');
 
     final response = await http.post(
       url,

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 // import 'package:uuid/uuid.dart'; // Tidak lagi diperlukan
 
-const String baseUrl = 'https://delbites.d4trpl-itdel.id';
+const String baseUrl = 'http://localhost';
 
 class MenuCard extends StatelessWidget {
   final Map<String, String> item;
@@ -74,7 +74,7 @@ class MenuCard extends StatelessWidget {
                     borderRadius:
                         const BorderRadius.vertical(top: Radius.circular(16)),
                     child: Image.network(
-                      'https://delbites.d4trpl-itdel.id/storage/${item['image']}',
+                      'http://localhost/storage/${item['image']}',
                       height: 120,
                       width: double.infinity,
                       fit: BoxFit.cover,

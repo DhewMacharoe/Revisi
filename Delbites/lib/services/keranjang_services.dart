@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
-const String baseUrl = 'https://delbites.d4trpl-itdel.id/api';
+const String baseUrl = 'http://localhost/api';
 
 class KeranjangService {
   static Future<bool> addToCart({
@@ -17,8 +17,7 @@ class KeranjangService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse(
-            'https://delbites.d4trpl-itdel.id/api/keranjang'), // Pastikan URL benar
+        Uri.parse('http://localhost/api/keranjang'), // Pastikan URL benar
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({
           'id_pelanggan': idPelanggan,

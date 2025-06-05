@@ -4,7 +4,7 @@ import 'package:Delbites/widgets/menu_card.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String baseUrl = 'https://delbites.d4trpl-itdel.id';
+const String baseUrl = 'http://localhost';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);

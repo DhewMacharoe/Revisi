@@ -1,6 +1,7 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -8,7 +9,7 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   String _verificationId = '';
-  static const String baseUrl = 'https://delbites.d4trpl-itdel.id';
+  static const String baseUrl = 'http://localhost';
 
   Future<bool> sendOTP(String phoneNumber) async {
     try {
