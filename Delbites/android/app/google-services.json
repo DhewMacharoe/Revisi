@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "919368319920",
+    "project_id": "cafedel10pa2",
+    "storage_bucket": "cafedel10pa2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:919368319920:android:b87b9425743fe88e574c75",
+        "android_client_info": {
+          "package_name": "com.example.delbites"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyARzd2vR_jQwwBTw92tj33tSWAi_Cx__cU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
