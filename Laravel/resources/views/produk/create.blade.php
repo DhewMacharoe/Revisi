@@ -92,7 +92,7 @@
                             <div class="d-flex justify-content-end gap-2">
                             <button type="submit" class="btn btn-primary">Simpan</button>
                             <button type="reset" class="btn btn-warning">Reset</button>
-                            <a href="{{ route('stok.index') }}" class="btn btn-secondary">Kembali</a>
+                            <a href="{{ route('produk.index') }}" class="btn btn-secondary">Kembali</a>
                         </div>  
                         </form>
                     </div>

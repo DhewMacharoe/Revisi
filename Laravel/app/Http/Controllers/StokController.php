@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\StokBahan;
 use Illuminate\Support\Facades\Auth;
+// Jika Anda memutuskan untuk menggunakan fasad Alert, Anda bisa uncomment baris ini.
+// Jika Anda menggunakan helper alert(), ini tidak selalu wajib.
+// use RealRashid\SweetAlert\Facades\Alert;
 
 class StokController extends Controller
 {
@@ -56,9 +59,15 @@ class StokController extends Controller
         $data['id_admin'] = Auth::id(); // Menyertakan id_admin
 
         // Simpan data
-        StokBahan::create($data);
+        $created = StokBahan::create($data);
 
-        return redirect()->route('stok.index')->with('success', 'Stok bahan berhasil ditambahkan.');
+        if ($created) {
+            alert()->success('Berhasil', 'Stok bahan berhasil ditambahkan.');
+        } else {
+            alert()->error('Gagal', 'Terjadi kesalahan saat menambahkan stok bahan.');
+        }
+
+        return redirect()->route('stok.index');
     }
 
     /**
@@ -91,11 +100,18 @@ class StokController extends Controller
             'satuan' => 'required|in:kg,liter,pcs,tandan,dus',
         ]);
 
-        // Mencari stok berdasarkan ID dan update data
+        // Mencari stok berdasarkan ID
         $stok = StokBahan::findOrFail($id);
-        $stok->update($request->only(['nama_bahan', 'jumlah', 'satuan']));  // Hanya memperbarui field yang diizinkan
+        // Update data
+        $updated = $stok->update($request->only(['nama_bahan', 'jumlah', 'satuan']));  // Hanya memperbarui field yang diizinkan
 
-        return redirect()->route('stok.index')->with('success', 'Stok bahan berhasil diperbarui.');
+        if ($updated) {
+            alert()->success('Berhasil', 'Stok bahan berhasil diperbarui.');
+        } else {
+            alert()->error('Gagal', 'Terjadi kesalahan saat memperbarui stok bahan.');
+        }
+
+        return redirect()->route('stok.index');
     }
 
     /**
@@ -105,8 +121,15 @@ class StokController extends Controller
     {
         // Menghapus stok bahan berdasarkan ID
         $stok = StokBahan::findOrFail($id);
-        $stok->delete();
+        $deleted = $stok->delete();
 
-        return redirect()->route('stok.index')->with('success', 'Stok bahan berhasil dihapus.');
+        if ($deleted) {
+            alert()->success('Berhasil', 'Stok bahan berhasil dihapus.');
+        } else {
+            // Ini jarang terjadi jika findOrFail berhasil dan tidak ada exception lain
+            alert()->error('Gagal', 'Stok bahan gagal dihapus.');
+        }
+
+        return redirect()->route('stok.index');
     }
 }

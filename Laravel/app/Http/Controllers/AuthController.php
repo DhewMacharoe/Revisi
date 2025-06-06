@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rules\Password;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Exceptions\JWTException;
+use App\Models\Setting;
 
 class AuthController extends Controller
 {
@@ -60,10 +61,29 @@ class AuthController extends Controller
     {
         $request->validate([
             'nama' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:admin'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:admin'], // Ganti 'admin' dengan nama tabel Anda
             'password' => ['required', 'confirmed', Password::min(8)],
+            'pin' => ['required', 'string'], // Validasi awal untuk PIN
         ]);
 
+        // Ambil PIN dari tabel settings
+        $registrationPin = Setting::where('key', 'registration_pin')->first();
+
+        // Cek apakah PIN sudah diatur oleh super admin
+        if (!$registrationPin || !$registrationPin->value) {
+            return back()->withErrors([
+                'pin' => 'Sistem belum siap untuk registrasi. Hubungi administrator utama.',
+            ])->withInput();
+        }
+
+        // Validasi PIN yang diinput dengan hash PIN di database
+        if (!Hash::check($request->pin, $registrationPin->value)) {
+            return back()->withErrors([
+                'pin' => 'PIN Registrasi yang Anda masukkan salah.',
+            ])->withInput();
+        }
+
+        // Jika PIN benar, lanjutkan proses registrasi
         $admin = Admin::create([
             'nama' => $request->nama,
             'email' => $request->email,
@@ -74,6 +94,7 @@ class AuthController extends Controller
 
         return redirect()->route('dashboard');
     }
+
 
     // Logout admin (web)
     public function logout(Request $request)
