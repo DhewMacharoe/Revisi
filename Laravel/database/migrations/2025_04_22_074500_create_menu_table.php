@@ -13,14 +13,13 @@ return new class extends Migration
     {
         Schema::create('menu', function (Blueprint $table) {
             $table->id();
-            $table->string('nama_menu',30);
+            $table->string('nama_menu', 30);
             $table->enum('kategori', ['makanan', 'minuman']);
             $table->enum('suhu', ['panas', 'dingin'])->nullable();
             $table->decimal('harga', 10, 2);
             $table->integer('stok')->default(0);
-            $table->string('gambar',255)->nullable();
-            // $table->integer('stok_terjual')->default(0);
-            $table->string('deskripsi',50)->nullable();
+            $table->string('gambar', 255)->nullable();
+            $table->string('deskripsi', 100)->nullable();
             $table->decimal('rating', 3, 2)->default(0.00);
             $table->unsignedBigInteger('id_admin')->nullable();
             $table->foreign('id_admin')->references('id')->on('admin')->onDelete('set null');

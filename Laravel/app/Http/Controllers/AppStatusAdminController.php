@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Log;   // Import Log facade
 
 class AppStatusAdminController extends Controller
 {
+    
     // Path ke file status aplikasi
     private $appStatusFilePath;
 

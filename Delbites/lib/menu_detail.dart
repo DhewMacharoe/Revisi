@@ -91,8 +91,13 @@ class _MenuDetailState extends State<MenuDetail> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final emailPelanggan = prefs.getString('email_pelanggan');
+      // Retrieve the customer ID
+      final idPelanggan = prefs.getInt('id_pelanggan');
 
-      if (emailPelanggan == null || emailPelanggan.isEmpty) {
+      if (emailPelanggan == null ||
+          emailPelanggan.isEmpty ||
+          idPelanggan == null) {
+        // Check for idPelanggan too
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
@@ -123,7 +128,9 @@ class _MenuDetailState extends State<MenuDetail> {
       }
 
       final body = jsonEncode({
-        'email_pelanggan': emailPelanggan,
+        // Send id_pelanggan as required by the API
+        'id_pelanggan': idPelanggan
+            .toString(), // Convert int to String if API expects string
         'id_menu': widget.menuId.toString(),
         'nama_menu': widget.name,
         'kategori': widget.kategori,
