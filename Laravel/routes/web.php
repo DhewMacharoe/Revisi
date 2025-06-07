@@ -61,13 +61,11 @@ Route::middleware(['auth:admin'])->group(function () {
 
     // Rute Profil Admin
 
-Route::middleware(['auth:admin'])->group(function () { // Pastikan guard 'admin' sesuai dengan setup Anda
-    Route::get('/profil', [ProfilController::class, 'index'])->name('profil.index');
-    Route::get('/profil/edit', [ProfilController::class, 'edit'])->name('profil.edit'); // TAMBAHKAN ROUTE INI
-    Route::put('/profil', [ProfilController::class, 'update'])->name('profil.update'); // Route ini sudah benar
-    // Anda mungkin ingin mengganti '/profil' menjadi '/profil/update' untuk lebih eksplisit,
-    // tapi '/profil' dengan method PUT juga standar RESTful.
-});
+    Route::middleware(['auth:admin'])->group(function () { // Pastikan guard 'admin' sesuai dengan setup Anda
+        Route::get('/profil', [ProfilController::class, 'index'])->name('profil.index');
+        Route::get('/profil/edit', [ProfilController::class, 'edit'])->name('profil.edit'); // TAMBAHKAN ROUTE INI
+        Route::put('/profil', [ProfilController::class, 'update'])->name('profil.update');
+    });
 
     Route::get('/pelanggan/by-telepon', [PelangganController::class, 'getByTelepon']);
 

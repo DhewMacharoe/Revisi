@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 Future<List<Map<String, String>>> fetchOrders() async {
-  final String apiUrl = 'https://delbites.d4trpl-itdel.id/api/pemesanan';
+  final String apiUrl = 'http://127.0.0.1:8000api/pemesanan';
 
   try {
     final response = await http.get(Uri.parse(apiUrl));

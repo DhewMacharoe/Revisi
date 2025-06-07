@@ -1,34 +1,78 @@
 import 'dart:convert';
 
-import 'package:Delbites/login_page.dart'; // Import halaman login
-import 'package:Delbites/suhu_selector.dart';
+import 'package:Delbites/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String baseUrl = 'https://delbites.d4trpl-itdel.id';
+const String baseUrl = 'http://127.0.0.1:8000';
+
+class SuhuSelector extends StatelessWidget {
+  final String? selectedSuhu;
+  final ValueChanged<String> onSelected;
+
+  const SuhuSelector({
+    required this.selectedSuhu,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Pilih Suhu:',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            ChoiceChip(
+              label: const Text('Panas'),
+              selected: selectedSuhu == 'panas',
+              onSelected: (selected) => onSelected('panas'),
+              selectedColor: const Color(0xFF4C53A5),
+              labelStyle: TextStyle(
+                  color: selectedSuhu == 'panas' ? Colors.white : Colors.black),
+            ),
+            ChoiceChip(
+              label: const Text('Dingin'),
+              selected: selectedSuhu == 'dingin',
+              onSelected: (selected) => onSelected('dingin'),
+              selectedColor: const Color(0xFF4C53A5),
+              labelStyle: TextStyle(
+                  color:
+                      selectedSuhu == 'dingin' ? Colors.white : Colors.black),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
 
 class MenuDetail extends StatefulWidget {
+  final int menuId;
   final String name;
   final String price;
+  final String deskripsi;
   final String imageUrl;
-  final int menuId;
   final String rating;
   final String kategori;
-  final String deskripsi;
 
   const MenuDetail({
+    required this.menuId,
     required this.name,
     required this.price,
+    required this.deskripsi,
     required this.imageUrl,
-    required this.menuId,
     required this.rating,
     required this.kategori,
-    required this.deskripsi,
-    Key? key,
-  }) : super(key: key);
+  });
 
   @override
   State<MenuDetail> createState() => _MenuDetailState();
@@ -39,38 +83,37 @@ class _MenuDetailState extends State<MenuDetail> {
   String? catatanTambahan;
   final currencyFormatter = NumberFormat.decimalPattern('id');
 
-  int getFinalPrice() {
-    int basePrice = int.tryParse(widget.price) ?? 0;
-    if (widget.kategori == 'minuman' && selectedSuhu == 'dingin') {
-      return basePrice + 2000; // Tambah biaya untuk minuman dingin
-    }
-    return basePrice;
+  double getFinalPrice() {
+    return double.tryParse(widget.price) ?? 0.0;
   }
 
   Future<void> addToCart() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final idPelanggan = prefs.getInt('id_pelanggan');
+      final emailPelanggan = prefs.getString('email_pelanggan');
 
-      if (idPelanggan == null || idPelanggan == 0) {
-        // Cek juga jika idPelanggan adalah 0 (nilai fallback)
-        // Jika idPelanggan null atau 0, arahkan ke halaman login
+      if (emailPelanggan == null || emailPelanggan.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Anda belum teridentifikasi. Silakan lengkapi data pelanggan.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
         final result = await Navigator.push(
           context,
-          MaterialPageRoute(
-              builder: (context) => const LoginPage()), // Arahkan ke LoginPage
+          MaterialPageRoute(builder: (context) => const LoginPage()),
         );
 
-        // Jika data berhasil diisi (result adalah true), coba lagi tambahkan ke keranjang
-        if (result == true) {
+        if (result == true && mounted) {
           addToCart();
         } else {
-          // Jika pengguna membatalkan atau tidak mengisi data, tampilkan pesan
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text(
-                    'Penambahan ke keranjang dibatalkan karena data pelanggan belum lengkap.'),
+                  'Penambahan ke keranjang dibatalkan karena data pelanggan belum lengkap.',
+                ),
                 backgroundColor: Colors.orange,
               ),
             );
@@ -80,8 +123,8 @@ class _MenuDetailState extends State<MenuDetail> {
       }
 
       final body = jsonEncode({
-        'id_menu': widget.menuId,
-        'id_pelanggan': idPelanggan,
+        'email_pelanggan': emailPelanggan,
+        'id_menu': widget.menuId.toString(),
         'nama_menu': widget.name,
         'kategori': widget.kategori,
         'suhu': selectedSuhu,
@@ -92,9 +135,15 @@ class _MenuDetailState extends State<MenuDetail> {
 
       final response = await http.post(
         Uri.parse('$baseUrl/api/keranjang'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
         body: body,
       );
+
+      print('API Response Status Code: ${response.statusCode}');
+      print('API Response Body: ${response.body}');
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final responseData = json.decode(response.body);
@@ -110,21 +159,34 @@ class _MenuDetailState extends State<MenuDetail> {
         Navigator.pop(context);
       } else {
         final errorData = json.decode(response.body);
-        throw Exception(
-            errorData['message'] ?? 'Gagal menambahkan ke keranjang');
+        String errorMessage =
+            errorData['message'] ?? 'Gagal menambahkan ke keranjang';
+        if (errorData['errors'] != null) {
+          errorData['errors'].forEach((key, value) {
+            errorMessage += '\n${value[0]}';
+          });
+        }
+        throw Exception(errorMessage);
       }
     } catch (e) {
-      final errorMsg = e.toString();
-      // Periksa apakah error terkait validasi atau pelanggan belum terdaftar
-      if (errorMsg.toLowerCase().contains('validasi') ||
-          errorMsg.toLowerCase().contains('pelanggan')) {
+      print('Error in addToCart: $e');
+      if (e.toString().toLowerCase().contains('pelanggan tidak ditemukan') ||
+          e.toString().toLowerCase().contains('tidak terautentikasi')) {
         final prefs = await SharedPreferences.getInstance();
-        await prefs.remove(
-            'id_pelanggan'); // Hapus ID pelanggan lokal yang tidak valid
-        // Tidak perlu memanggil _showPelangganDialog lagi, karena sudah ditangani di awal addToCart
-      }
-
-      if (mounted) {
+        await prefs.remove('id_pelanggan');
+        await prefs.remove('email_pelanggan');
+        await prefs.remove('nama_pelanggan');
+        await prefs.remove('telepon_pelanggan');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                  'Sesi Anda tidak valid. Silakan lengkapi data pelanggan kembali.'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+      } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -139,7 +201,7 @@ class _MenuDetailState extends State<MenuDetail> {
   }
 
   void _showCatatanDialog(BuildContext context) {
-    final _catatanController = TextEditingController();
+    final catatanController = TextEditingController();
 
     showDialog(
       context: context,
@@ -147,7 +209,7 @@ class _MenuDetailState extends State<MenuDetail> {
         return AlertDialog(
           title: const Text('Catatan Tambahan'),
           content: TextField(
-            controller: _catatanController,
+            controller: catatanController,
             decoration: const InputDecoration(
               hintText: 'Contoh: Kurangi gula, tanpa es...',
             ),
@@ -160,9 +222,9 @@ class _MenuDetailState extends State<MenuDetail> {
             ),
             ElevatedButton(
               onPressed: () {
-                setState(() => catatanTambahan = _catatanController.text);
+                setState(() => catatanTambahan = catatanController.text);
                 Navigator.pop(context);
-                addToCart(); // Panggil addToCart setelah catatan diisi
+                addToCart();
               },
               child: const Text('Tambah'),
             ),
@@ -254,17 +316,14 @@ class _MenuDetailState extends State<MenuDetail> {
               key: const Key("add-to-cart-button"),
               onPressed: () {
                 if (widget.kategori == 'minuman' && selectedSuhu == null) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Pilih versi minuman terlebih dahulu!'),
-                      ),
-                    );
-                  }
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Pilih versi minuman terlebih dahulu!'),
+                    ),
+                  );
                   return;
                 }
-                _showCatatanDialog(
-                    context); // Panggil dialog catatan terlebih dahulu
+                _showCatatanDialog(context);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4C53A5),

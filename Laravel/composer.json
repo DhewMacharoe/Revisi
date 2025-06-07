@@ -13,10 +13,12 @@
         "laravel/tinker": "^2.10.1",
         "midtrans/midtrans-php": "^2.6",
         "pusher/pusher-php-server": "^7.2",
+        "realrashid/sweet-alert": "^7.3",
         "reliese/laravel": "^1.4",
         "tymon/jwt-auth": "^2.2"
     },
     "require-dev": {
+        "barryvdh/laravel-ide-helper": "^3.5",
         "fakerphp/faker": "^1.23",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.13",

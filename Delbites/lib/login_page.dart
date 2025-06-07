@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http; // Import package http
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String baseUrl = 'https://delbites.d4trpl-itdel.id'; // Base URL API Anda
+const String baseUrl = 'http://127.0.0.1:8000'; // Base URL API Anda
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
