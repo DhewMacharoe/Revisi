@@ -57,26 +57,30 @@ class AuthController extends Controller
     }
 
     // Proses register admin (web)
+     // Proses register admin (web)
     public function register(Request $request)
     {
+        // PERUBAHAN: Menambahkan validasi 'numeric' dan 'digits:6' untuk PIN
         $request->validate([
             'nama' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:admin'], // Ganti 'admin' dengan nama tabel Anda
             'password' => ['required', 'confirmed', Password::min(8)],
-            'pin' => ['required', 'string'], // Validasi awal untuk PIN
+            'pin' => ['required', 'numeric', 'digits:6'], 
+        ], [
+            // Pesan error kustom untuk validasi PIN
+            'pin.numeric' => 'PIN Registrasi harus berupa angka.',
+            'pin.digits' => 'PIN Registrasi harus terdiri dari 6 digit.',
         ]);
 
-        // Ambil PIN dari tabel settings
+        // Logika validasi PIN dengan database (dari implementasi sebelumnya)
         $registrationPin = Setting::where('key', 'registration_pin')->first();
 
-        // Cek apakah PIN sudah diatur oleh super admin
         if (!$registrationPin || !$registrationPin->value) {
             return back()->withErrors([
-                'pin' => 'Sistem belum siap untuk registrasi. Hubungi administrator utama.',
+                'pin' => 'Sistem belum siap untuk registrasi. Hubungi administrator.',
             ])->withInput();
         }
 
-        // Validasi PIN yang diinput dengan hash PIN di database
         if (!Hash::check($request->pin, $registrationPin->value)) {
             return back()->withErrors([
                 'pin' => 'PIN Registrasi yang Anda masukkan salah.',

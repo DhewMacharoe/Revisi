@@ -141,7 +141,7 @@
 
                         <div class="d-flex align-items-center">
                             <!-- Notification Bell -->
-                            <div class="me-3">
+                            {{-- <div class="me-3">
                                 <a class="nav-link position-relative" href="{{ route('notifikasi.index') }}">
                                     <i class="fas fa-bell"></i>
                                     <span id="notificationCount"
@@ -150,7 +150,7 @@
                                         0
                                     </span>
                                 </a>
-                            </div>
+                            </div> --}}
 
                             <!-- User Dropdown -->
                             <div class="dropdown p-2">

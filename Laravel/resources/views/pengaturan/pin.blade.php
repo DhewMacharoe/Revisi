@@ -95,5 +95,20 @@
             });
         @endif
     });
+
+        document.addEventListener('DOMContentLoaded', function() {
+        // Pilih semua input PIN
+        const pinInputs = document.querySelectorAll('input[name="pin"], input[name="pin_confirmation"]');
+        
+        pinInputs.forEach(input => {
+            input.addEventListener('keydown', function(e) {
+                // Blokir input jika tombol yang ditekan adalah 'e', '+', atau '-'
+                if (e.key === 'e' || e.key === '+' || e.key === '-') {
+                    e.preventDefault();
+                }
+            });
+        });
+    });
 </script>
+
 @endsection
