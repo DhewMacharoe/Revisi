@@ -46,7 +46,7 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-md-6">
-                <div class="card auth-card">
+                <div class="card auth-card mx-auto">
                     <div class="card-body">
                         <div class="auth-header">
                             <div class="auth-logo">

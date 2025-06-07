@@ -1,7 +1,7 @@
-    @extends('layouts.auth')
+@extends('layouts.auth')
 
-    @section('title', 'Register - DelBites')
-    @section('subtitle', 'Daftar Akun Admin Baru')
+@section('title', 'Register - DelBites')
+@section('subtitle', 'Daftar Akun Admin Baru')
 
     @section('content')
         <form method="POST" action="{{ route('register.submit') }}">
@@ -69,12 +69,13 @@
                 @enderror
             </div>
 
-            <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-primary">Daftar</button>
-            </div>
-        </form>
-
-        <div class="mt-3 text-center">
-            <p>Sudah punya akun? <a href="{{ route('login') }}">Masuk</a></p>
+        <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">Daftar</button>
         </div>
-    @endsection
+    </form>
+
+    <div class="mt-3 text-center">
+        <p>Sudah punya akun? <a href="{{ route('login') }}">Masuk</a></p>
+    </div>
+</div>
+@endsection
