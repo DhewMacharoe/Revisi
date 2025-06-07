@@ -12,12 +12,12 @@ class CreateKeranjangTable extends Migration
             $table->id();
             $table->unsignedBigInteger('id_pelanggan');
             $table->unsignedBigInteger('id_menu');
-            $table->string('nama_menu');
+            $table->string('nama_menu',30);
             $table->enum('kategori', ['makanan', 'minuman'])->nullable();
             $table->integer('jumlah')->default(1);
             $table->decimal('harga', 10, 2);
-            $table->string('catatan')->nullable(); // Tambahkan ini
-            $table->string('suhu')->nullable(); // Tambahkan ini juga untuk konsistensi
+            $table->string('catatan',50)->nullable(); // Tambahkan ini
+            $table->string('suhu',20)->nullable(); // Tambahkan ini juga untuk konsistensi
             $table->timestamps();
         
             // Foreign key constraints

@@ -13,7 +13,7 @@
         {
             Schema::create('settings', function (Blueprint $table) {
                 $table->id();
-                $table->string('key')->unique(); // Contoh: 'registration_pin'
+                $table->string('key',100)->unique(); // Contoh: 'registration_pin'
                 $table->text('value')->nullable(); // Nilai dari pengaturan, bisa null
                 $table->foreignId('updated_by_admin_id')->nullable()->constrained('admin')->onDelete('set null'); // Ganti 'admin' dengan nama tabel admin Anda jika berbeda
                 $table->timestamps();

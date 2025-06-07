@@ -95,9 +95,9 @@
                                                         class="btn btn-sm btn-warning">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
-                                                    {{-- Form Hapus dengan class .delete-form --}}
+                                                    {{-- PERBAIKAN 1: Tambahkan data-attribute untuk nama produk --}}
                                                     <form action="{{ route('produk.destroy', $p->id) }}" method="POST"
-                                                        class="d-inline delete-form">
+                                                        class="d-inline delete-form" data-nama-produk="{{ $p->nama_menu }}">
                                                         @csrf
                                                         @method('DELETE')
                                                         <button type="submit" class="btn btn-sm btn-danger">
@@ -128,7 +128,7 @@
 @endsection
 
 @section('scripts')
-    @parent {{-- Opsional: mempertahankan script dari parent layout jika ada --}}
+    @parent
 
     {{-- 2. Sertakan SweetAlert2 JS via CDN (HARUS SEBELUM script custom Anda) --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
@@ -136,8 +136,6 @@
     {{-- 3. Script custom Anda untuk konfirmasi hapus --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM fully loaded. SweetAlert object:', typeof Swal); // Cek apakah Swal terdefinisi
-
             // Auto submit form saat filter kategori berubah
             const kategoriSelect = document.getElementById('kategori');
             if (kategoriSelect) {
@@ -148,62 +146,38 @@
 
             // SweetAlert untuk konfirmasi hapus
             const deleteForms = document.querySelectorAll('.delete-form');
-            console.log('Found delete forms on index page:', deleteForms.length);
-
             deleteForms.forEach(form => {
-                console.log('Attaching listener to form (index page):', form);
                 form.addEventListener('submit', function(event) {
                     event.preventDefault();
-                    console.log('Delete form submit event triggered for form (index page):', this);
+
+                    // PERBAIKAN 2: Ambil nama produk dari data-attribute yang sudah kita tambahkan
+                    const productName = this.dataset.namaProduk || "Produk ini"; // Fallback ke pesan umum
 
                     if (typeof Swal === 'undefined') {
-                        console.error('SweetAlert (Swal) is not loaded on index page!');
-                        // Ambil nama produk dari elemen terdekat jika memungkinkan, atau pesan generik
-                        let productName = 'Produk ini'; // Pesan default
-                        // Anda bisa coba mengambil nama produk dari kolom tabel jika strukturnya memungkinkan
-                        // Contoh (perlu disesuaikan dengan struktur HTML Anda):
-                        // const row = this.closest('tr');
-                        // if (row) {
-                        //     const nameCell = row.querySelector('td:nth-child(2)'); // Asumsi nama produk di kolom kedua
-                        //     if (nameCell) productName = "'" + nameCell.textContent.trim() + "'";
-                        // }
-
-                        if (confirm(productName + " akan dihapus. Lanjutkan? (SweetAlert gagal dimuat)")) {
+                        console.error('SweetAlert (Swal) is not loaded!');
+                        if (confirm("Apakah Anda yakin ingin menghapus '" + productName + "'? (SweetAlert gagal dimuat)")) {
                             this.submit();
                         }
                         return;
                     }
 
-                    // Dapatkan nama produk. Karena kita di dalam loop, kita tidak bisa langsung pakai @json($p->nama_menu)
-                    // Salah satu cara adalah dengan menambahkan data attribute ke tombol atau form.
-                    // Untuk kesederhanaan, kita gunakan pesan umum di sini atau Anda bisa implementasikan data attribute.
-                    // Contoh jika Anda menambahkan data-nama="{{ $p->nama_menu }}" pada form:
-                    // const productName = this.dataset.nama || "Produk ini";
-                    const productName = "Produk ini"; // Pesan umum untuk contoh ini
-
                     Swal.fire({
                         title: 'Apakah Anda yakin?',
-                        text: productName + " akan dihapus dan tidak dapat dikembalikan!",
+                        // PERBAIKAN 3: Gunakan variabel productName di pesan
+                        text: "Produk '" + productName + "' akan dihapus dan tidak dapat dikembalikan!",
                         icon: 'warning',
                         showCancelButton: true,
                         confirmButtonColor: '#d33',
-                        cancelButtonColor: '#3085d6',
+                        cancelButtonColor: '#6c757d',
                         confirmButtonText: 'Ya, hapus!',
                         cancelButtonText: 'Batal'
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            console.log('Confirmed (index page)! Submitting form programmatically.');
                             this.submit();
-                        } else {
-                            console.log('Cancelled by user (index page).');
                         }
                     });
                 });
             });
         });
     </script>
-
-    {{-- 4. (Opsional) Script untuk menampilkan notifikasi session (jika tidak pakai realrashid/sweet-alert) --}}
-    {{-- Jika Anda menggunakan pendekatan CDN ini secara menyeluruh, Anda perlu script seperti ini di layout utama --}}
-    {{-- (Lihat contoh di respons sebelumnya untuk produk.show.blade.php) --}}
 @endsection

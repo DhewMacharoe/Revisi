@@ -10,8 +10,8 @@ return new class extends Migration
     {
         Schema::create('pelanggan', function (Blueprint $table) {
             $table->id();
-            $table->string('nama');
-            $table->string('telepon')->nullable();
+            $table->string('nama',30);
+            $table->string('telepon',13)->nullable();
             $table->string('device_id')->unique();
             $table->timestamps();
         });

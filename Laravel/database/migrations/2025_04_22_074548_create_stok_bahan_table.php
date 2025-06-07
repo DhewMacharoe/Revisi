@@ -13,7 +13,7 @@ return new class extends Migration
             $table->id(); 
             $table->unsignedBigInteger('id_admin')->nullable();
             $table->foreign('id_admin')->references('id')->on('admin')->onDelete('set null');
-            $table->string('nama_bahan');
+            $table->string('nama_bahan',20);
             $table->integer('jumlah');
             $table->enum('satuan', ['kg', 'liter', 'pcs', 'tandan', 'dus']);
             $table->timestamps();

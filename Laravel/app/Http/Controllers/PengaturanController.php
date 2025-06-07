@@ -10,12 +10,11 @@ use Illuminate\Support\Facades\Hash;
 class PengaturanController extends Controller
 {
     /**
-     * Konstruktor tidak lagi membatasi akses hanya untuk ID 1.
-     * Semua admin yang terautentikasi (melalui middleware di route) bisa mengakses method ini.
+     * Memastikan hanya admin yang terautentikasi yang bisa mengakses.
+     * Middleware 'auth:admin' akan diterapkan melalui file route.
      */
     public function __construct()
     {
-        // Pastikan middleware 'auth:admin' diterapkan di file route Anda untuk controller ini.
         $this->middleware('auth:admin');
     }
 
@@ -26,7 +25,6 @@ class PengaturanController extends Controller
     public function showPinForm()
     {
         // Mencari PIN di database, jika tidak ada, buat baru dengan nilai null.
-        // 'updated_by_admin_id' akan diisi dengan ID admin yang pertama kali membuka halaman ini jika PIN belum ada.
         $pinSetting = Setting::firstOrCreate(
             ['key' => 'registration_pin'],
             ['value' => null, 'updated_by_admin_id' => Auth::guard('admin')->id()]
@@ -41,16 +39,19 @@ class PengaturanController extends Controller
      */
     public function updatePin(Request $request)
     {
+        // Mengubah validasi menjadi 'digits:6' untuk memastikan panjangnya tepat 6
+        // dan tetap mempertahankan 'numeric'.
         $request->validate([
-            'pin' => 'required|string|min:6|confirmed', // 'pin_confirmation' harus ada di form
+            'pin' => 'required|numeric|digits:6|confirmed',
+        ], [
+            'pin.numeric' => 'PIN harus berupa angka.',
+            'pin.digits' => 'PIN harus terdiri dari 6 digit angka.',
+            'pin.confirmed' => 'Konfirmasi PIN tidak cocok.',
         ]);
 
-        // Update atau buat data PIN.
-        // updated_by_admin_id akan diisi dengan ID admin yang melakukan perubahan.
         Setting::updateOrCreate(
             ['key' => 'registration_pin'],
             [
-                // Simpan PIN sebagai hash untuk keamanan
                 'value' => Hash::make($request->pin),
                 'updated_by_admin_id' => Auth::guard('admin')->id()
             ]

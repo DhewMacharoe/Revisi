@@ -17,8 +17,8 @@ return new class extends Migration
             $table->integer('harga_satuan');
             $table->decimal('rating', 3, 2)->nullable();   
             $table->integer('subtotal');
-            $table->string('catatan')->nullable(); // Tambahkan ini
-            $table->string('suhu')->nullable();
+            $table->string('catatan',50)->nullable(); // Tambahkan ini
+            $table->string('suhu',20)->nullable();
             $table->timestamps();   
             $table->foreign('id_pemesanan')->references('id')->on('pemesanan')->onDelete('cascade');
             $table->foreign('id_menu')->references('id')->on('menu')->onDelete('cascade');

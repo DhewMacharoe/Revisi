@@ -11,32 +11,32 @@
     @endif
 
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-12">
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Informasi Profil</h5>
                     <div class="dropdown">
                         <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="profileActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-bars me-1"></i> Menu
+                            <i class="fas fa-bars me-1"></i> Pengaturan
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileActionsDropdown">
                             <li><a class="dropdown-item" href="{{ route('profil.edit') }}"><i class="fas fa-edit me-2"></i>Edit Profil</a></li>
                             
-                            {{-- KONDISI IF DIHAPUS, MENU INI SEKARANG TAMPIL UNTUK SEMUA ADMIN --}}
+
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{{ route('pin.edit') }}"><i class="fas fa-key me-2"></i>Kelola PIN Registrasi</a></li>
+
                         </ul>
                     </div>
                 </div>
                 <div class="card-body">
-                    {{-- ... (Isi card body profil Anda) ... --}}
                     <div class="row">
-                        <div class="col-md-4 text-center mb-3 mb-md-0">
+                        {{-- <div class="col-md-4 text-center mb-3 mb-md-0">
                             <img src="{{ $admin->foto ? asset('storage/' . $admin->foto) : asset('images/default-avatar.png') }}"
                                  alt="Foto Profil {{ $admin->nama }}"
                                  class="img-fluid rounded-circle shadow-sm"
                                  style="width: 150px; height: 150px; object-fit: cover;">
-                        </div>
+                        </div> --}}
                         <div class="col-md-8">
                             <dl class="row">
                                 <dt class="col-sm-4">Nama</dt>

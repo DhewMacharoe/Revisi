@@ -6,6 +6,23 @@
 @section('styles')
     @parent
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    {{-- CSS untuk menyembunyikan angka pada input number --}}
+    <style>
+        .numeric-password {
+            -webkit-text-security: disc;
+            -moz-text-security: disc;
+            text-security: disc;
+        }
+        /* Mencegah tombol spinner pada input number */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
 @endsection
 
 @section('content')
@@ -17,14 +34,16 @@
                     <h5 class="mb-0">Atur PIN Registrasi Admin</h5>
                 </div>
                 <div class="card-body">
-                    <p class="text-muted">PIN ini akan digunakan sebagai syarat untuk mendaftarkan akun admin baru. Harap simpan PIN ini dengan aman.</p>
+                    <p class="text-muted">PIN harus berupa angka dan akan digunakan sebagai syarat untuk mendaftarkan akun admin baru.</p>
                     
                     <form action="{{ route('pin.update') }}" method="POST">
                         @csrf
                         <div class="mb-3">
-                            <label for="pin" class="form-label">PIN Baru (Minimal 6 karakter)</label>
-                            <input type="password" name="pin" id="pin"
-                                   class="form-control @error('pin') is-invalid @enderror" required>
+                            <label for="pin" class="form-label">PIN Baru (Hanya Angka, 6 digit)</label>
+                            {{-- Mengubah tipe input dan menambahkan class --}}
+                            <input type="number" name="pin" id="pin"
+                                   class="form-control numeric-password @error('pin') is-invalid @enderror" 
+                                   inputmode="numeric" required>
                             @error('pin')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
@@ -32,8 +51,9 @@
 
                         <div class="mb-3">
                             <label for="pin_confirmation" class="form-label">Konfirmasi PIN Baru</label>
-                            <input type="password" name="pin_confirmation" id="pin_confirmation"
-                                   class="form-control" required>
+                            <input type="number" name="pin_confirmation" id="pin_confirmation"
+                                   class="form-control numeric-password" 
+                                   inputmode="numeric" required>
                         </div>
 
                         <div class="d-flex justify-content-between">
@@ -48,7 +68,7 @@
                 </div>
                 @if($pinSetting->updated_at && $pinSetting->value)
                 <div class="card-footer bg-light text-muted text-sm">
-                    PIN terakhir diperbarui pada: {{ $pinSetting->updated_at->format('d M Y, H:i') }}
+                    Terakhir diperbarui pada: {{ $pinSetting->updated_at->format('d M Y, H:i') }}
                     @if($pinSetting->updatedByAdmin)
                         oleh {{ $pinSetting->updatedByAdmin->nama }}
                     @endif

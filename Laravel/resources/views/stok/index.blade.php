@@ -71,7 +71,7 @@
                                     <td>{{ $s->nama_bahan }}</td>
                                     <td>{{ $s->jumlah }}</td>
                                     <td>{{ ucfirst($s->satuan) }}</td>
-                                    <td>{{ $s->admin->nama ?? 'N/A' }}</td> {{-- Tambahkan ?? 'N/A' jika admin bisa null --}}
+                                    <td>{{ $s->admin->nama ?? 'N/A' }}</td>
                                     <td>{{ $s->created_at->format('d/m/Y') }}</td>
                                     <td>
                                         <div class="btn-group" role="group">
@@ -81,7 +81,7 @@
                                             <a href="{{ route('stok.edit', $s->id) }}" class="btn btn-sm btn-warning">
                                                 <i class="fas fa-edit"></i>
                                             </a>
-                                            {{-- MODIFIKASI FORM HAPUS --}}
+                                            {{-- PERBAIKAN 1: Menambahkan data-nama-bahan untuk dibaca oleh JavaScript --}}
                                             <form action="{{ route('stok.destroy', $s->id) }}" method="POST" class="d-inline delete-form" data-nama-bahan="{{ $s->nama_bahan }}">
                                                 @csrf
                                                 @method('DELETE')
@@ -100,7 +100,7 @@
                             </tbody>
                         </table>
                     </div>
-
+                    
                     <div class="d-flex justify-content-center mt-4">
                         {{ $stok->appends(request()->query())->links() }}
                     </div>
@@ -112,7 +112,7 @@
 @endsection
 
 @section('scripts')
-@parent {{-- Opsional: mempertahankan script dari parent layout jika ada --}}
+@parent
 
 {{-- 2. Sertakan SweetAlert2 JS via CDN (HARUS SEBELUM script custom Anda) --}}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
@@ -120,11 +120,9 @@
 {{-- 3. Script custom Anda --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM fully loaded for stok.index. SweetAlert object:', typeof Swal);
-
     // Auto submit form saat filter satuan berubah
     const satuanSelect = document.getElementById('satuan');
-    if (satuanSelect) { // Pastikan elemen ada sebelum menambahkan event listener
+    if (satuanSelect) {
         satuanSelect.addEventListener('change', function() {
             this.form.submit();
         });
@@ -132,20 +130,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // SweetAlert untuk konfirmasi hapus
     const deleteForms = document.querySelectorAll('.delete-form');
-    console.log('Found delete forms on stok page:', deleteForms.length);
-
     deleteForms.forEach(form => {
-        console.log('Attaching listener to stok form:', form);
-        // Menambahkan data-nama-bahan pada form: data-nama-bahan="{{ $s->nama_bahan }}"
-        const namaBahan = form.dataset.namaBahan || "Stok bahan ini"; // Ambil nama bahan dari data attribute
-
         form.addEventListener('submit', function(event) {
             event.preventDefault();
-            console.log('Delete form submit event triggered for stok form:', this);
+
+            // PERBAIKAN 2: Ambil nama bahan dari data-attribute yang sudah dititipkan
+            const namaBahan = this.dataset.namaBahan || "Stok bahan ini";
 
             if (typeof Swal === 'undefined') {
-                console.error('SweetAlert (Swal) is not loaded on stok page!');
-                if (confirm("'" + namaBahan + "' akan dihapus. Lanjutkan? (SweetAlert gagal dimuat)")) {
+                console.error('SweetAlert (Swal) is not loaded!');
+                if (confirm("Apakah Anda yakin ingin menghapus '" + namaBahan + "'? (SweetAlert gagal dimuat)")) {
                     this.submit();
                 }
                 return;
@@ -153,26 +147,22 @@ document.addEventListener('DOMContentLoaded', function() {
 
             Swal.fire({
                 title: 'Apakah Anda yakin?',
+                // PERBAIKAN 3: Gunakan variabel namaBahan di dalam pesan
                 text: "Stok bahan '" + namaBahan + "' akan dihapus dan tidak dapat dikembalikan!",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
+                cancelButtonColor: '#6c757d',
                 confirmButtonText: 'Ya, hapus!',
                 cancelButtonText: 'Batal'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    console.log('Confirmed (stok page)! Submitting form programmatically.');
                     this.submit();
-                } else {
-                    console.log('Cancelled by user (stok page).');
                 }
             });
         });
     });
 });
 </script>
-
-{{-- Script untuk notifikasi session (jika diperlukan dan tidak pakai realrashid) bisa diletakkan di layout utama --}}
 
 @endsection
