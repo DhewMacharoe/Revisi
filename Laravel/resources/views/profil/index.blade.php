@@ -5,82 +5,76 @@
 
 @section('content')
 <div class="container-fluid">
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+    {{-- Notifikasi Sukses dari session --}}
+    @if (session('success_sweetalert'))
+        {{-- Penanganan notifikasi ini akan lebih baik jika ada di layout utama atau di section scripts --}}
     @endif
 
     <div class="row justify-content-center">
-        <div class="col-md-8">
+        <div class="col-md-12">
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-white">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">Informasi Profil</h5>
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="profileActionsDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-bars me-1"></i> Pengaturan
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="profileActionsDropdown">
+                            <li><a class="dropdown-item" href="{{ route('profil.edit') }}"><i class="fas fa-edit me-2"></i>Edit Profil</a></li>
+                            
+                            {{-- TAMBAHAN: Opsi ini hanya muncul untuk super admin (ID 1) --}}
+                            @if(Auth::id() === 1)
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ route('pin.edit') }}"><i class="fas fa-key me-2"></i>Kelola PIN Registrasi</a></li>
+                            @endif
+                        </ul>
+                    </div>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('profil.update') }}" method="POST" enctype="multipart/form-data">
-                        @csrf
-                        @method('PUT')
+                    <div class="row">
+                        {{-- <div class="col-md-4 text-center mb-3 mb-md-0">
+                            <img src="{{ $admin->foto ? asset('storage/' . $admin->foto) : asset('images/default-avatar.png') }}"
+                                 alt="Foto Profil {{ $admin->nama }}"
+                                 class="img-fluid rounded-circle shadow-sm"
+                                 style="width: 150px; height: 150px; object-fit: cover;">
+                        </div> --}}
+                        <div class="col-md-8">
+                            <dl class="row">
+                                <dt class="col-sm-4">Nama</dt>
+                                <dd class="col-sm-8">{{ $admin->nama ?? 'Tidak Ada Nama' }}</dd>
 
-                        <div class="mb-3">
-                            <label for="nama" class="form-label">Nama</label>
-                            <input type="text" name="nama" id="nama" 
-                                value="{{ old('nama', $admin->nama ?? auth()->user()->nama) }}"
-                                class="form-control @error('nama') is-invalid @enderror">
-                            @error('nama')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                                <dt class="col-sm-4">Email</dt>
+                                <dd class="col-sm-8">{{ $admin->email ?? 'Tidak Ada Email' }}</dd>
+
+                                <dt class="col-sm-4">Bergabung Sejak</dt>
+                                <dd class="col-sm-8">{{ $admin->created_at ? $admin->created_at->format('d F Y') : '-' }}</dd>
+
+                                <dt class="col-sm-4">Terakhir Diperbarui</dt>
+                                <dd class="col-sm-8">{{ $admin->updated_at ? $admin->updated_at->diffForHumans() : '-' }}</dd>
+                            </dl>
                         </div>
-
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input type="email" name="email" id="email" 
-                                value="{{ old('email', $admin->email ?? auth()->user()->email) }}"
-                                class="form-control @error('email') is-invalid @enderror">
-                            @error('email')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        {{-- FOTO PROFIL --}}
-                        <div class="mb-3">
-                            <label for="foto" class="form-label">Foto Profil</label>
-                            <input type="file" name="foto" id="foto"
-                                   class="form-control form-control-sm @error('foto') is-invalid @enderror"
-                                   accept="image/*" onchange="previewFoto(this)">
-                            @error('foto')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <hr>
-
-                        <p class="text-muted mb-2">Ubah Password (Opsional)</p>
-
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password Baru</label>
-                            <input type="password" name="password" id="password"
-                                   class="form-control @error('password') is-invalid @enderror">
-                            @error('password')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="password_confirmation" class="form-label">Konfirmasi Password Baru</label>
-                            <input type="password" name="password_confirmation" id="password_confirmation"
-                                   class="form-control">
-                        </div>
-
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ url()->previous() }}" class="btn btn-secondary">Kembali</a>
-                            <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
-                        </div>
-                    </form>
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-end">
+                     <a href="{{ url()->previous() != url()->current() ? url()->previous() : route('dashboard') }}" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-arrow-left me-1"></i> Kembali
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
+@endsection
+
+@section('scripts')
+@parent
+{{-- Jika Anda menggunakan SweetAlert untuk notifikasi dari session, pastikan skrip ini ada setelah SweetAlert JS dimuat --}}
+{{-- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script> --}}
+{{-- <script> --}}
+{{-- document.addEventListener('DOMContentLoaded', function() { --}}
+{{-- @if(session('success_sweetalert')) --}}
+{{-- Swal.fire({ icon: 'success', title: 'Berhasil!', text: "{{ session('success_sweetalert') }}", timer:3000, showConfirmButton: false }); --}}
+{{-- @endif --}}
+{{-- }); --}}
+{{-- </script> --}}
 @endsection

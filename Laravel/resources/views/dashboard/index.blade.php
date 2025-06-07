@@ -77,9 +77,8 @@
         <div class="row">
             <div class="col-12 mb-4">
                 <div class="card border-0 shadow-sm">
-                    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <div class="card-header bg-white">
                         <h5 class="mb-0">Pesanan Terbaru</h5>
-
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -239,62 +238,17 @@
                                 </tr>
                             </thead>
                             <tbody id="detailPesananBody">
+                                <!-- Data akan diisi melalui JavaScript -->
                             </tbody>
                         </table>
                     </div>
                     <div class="modal-footer" id="modalFooter">
+                        <!-- Tombol akan diisi secara dinamis berdasarkan status -->
                     </div>
                 </div>
             </div>
         </div>
     </div>
-
-    <style>
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 40px;
-            height: 20px;
-        }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 2px;
-            bottom: 2px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked+.slider {
-            background-color: #2196F3;
-        }
-
-        input:checked+.slider:before {
-            transform: translateX(20px);
-        }
-    </style>
 @endsection
 
 @section('scripts')
@@ -434,7 +388,7 @@
                             modal.hide();
                             window.location.reload();
                         } else {
-                            disablePaymentOptions();
+                            alert('Gagal memperbarui status pesanan');
                         }
                     })
                     .catch(error => {

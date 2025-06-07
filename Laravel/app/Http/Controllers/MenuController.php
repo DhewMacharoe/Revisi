@@ -4,46 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Menu;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Log; // Tambahkan baris ini
 
 class MenuController extends Controller
 {
     public function index()
     {
-        // Path ke file status aplikasi
-        $appStatusFilePath = storage_path('app/app_status.json');
-        $appStatus = ['status' => 'open', 'message' => '']; // Default open
-
-        // Baca status aplikasi dari file jika ada
-        if (File::exists($appStatusFilePath)) {
-            try {
-                $fileContent = File::get($appStatusFilePath);
-                $decodedContent = json_decode($fileContent, true);
-                if (json_last_error() === JSON_ERROR_NONE && is_array($decodedContent)) {
-                    $appStatus = array_merge($appStatus, $decodedContent);
-                }
-            } catch (\Exception $e) {
-                // Log error jika gagal membaca/decode file
-                Log::error('Failed to read app_status.json: ' . $e->getMessage());
-            }
-        } else {
-            // Jika file tidak ada, buat dengan status default 'open'
-            File::put($appStatusFilePath, json_encode($appStatus));
-        }
-
-        // Jika status aplikasi adalah 'closed', kembalikan respons khusus
-        if ($appStatus['status'] === 'closed') {
-            return response()->json([
-                'app_status' => 'closed',
-                'message' => $appStatus['message'] ?: 'Aplikasi sedang dalam pemeliharaan. Mohon coba lagi nanti.'
-            ]);
-        }
-
-        // Jika status aplikasi 'open', kembalikan data menu normal
         return response()->json(Menu::all());
     }
-
     public function show($id)
     {
         return response()->json(Menu::findOrFail($id));

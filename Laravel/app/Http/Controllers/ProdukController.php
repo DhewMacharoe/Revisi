@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Menu;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+// use RealRashid\SweetAlert\Facades\Alert; // Uncomment jika ingin menggunakan fasad Alert::
 
 class ProdukController extends Controller
 {
@@ -43,34 +44,46 @@ class ProdukController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-{
-    $request->validate([
-        'nama_menu' => 'required|string|max:50',
-        'kategori' => 'required|in:makanan,minuman',
-        'harga' => 'required|integer|min:0',
-        'stok' => 'required|integer|min:0',
-        'gambar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-    ]);
+    {
+        $request->validate([
+            'nama_menu' => 'required|string|max:50',
+            'kategori' => 'required|in:makanan,minuman',
+            'harga' => 'required|integer|min:0',
+            'stok' => 'required|integer|min:0',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // Tambahkan webp jika perlu
+        ]);
 
-    $data = $request->all();
-    $data['id_admin'] = Auth::guard('admin')->id();
-    $data['stok_terjual'] = 0;
+        $data = $request->all();
+        $data['id_admin'] = Auth::guard('admin')->id();
+        $data['stok_terjual'] = 0; // Default stok terjual
 
-    if ($request->hasFile('gambar')) {
-        $gambar = $request->file('gambar');
-        $nama_file = time() . '_' . preg_replace('/\s+/', '_', $gambar->getClientOriginalName());
+        if ($request->hasFile('gambar')) {
+            try {
+                $gambar = $request->file('gambar');
+                $nama_file = time() . '_' . preg_replace('/\s+/', '_', $gambar->getClientOriginalName());
 
-        // Simpan ke public/storage/menu
-        $gambar->move(public_path('storage/menu'), $nama_file);
+                // Simpan ke public/storage/menu
+                // Pastikan direktori 'storage/menu' dapat ditulis oleh server.
+                $gambar->move(public_path('storage/menu'), $nama_file);
+                $data['gambar'] = 'menu/' . $nama_file; // Path relatif untuk disimpan di DB
+            } catch (\Exception $e) {
+                // Jika gagal upload gambar
+                alert()->error('Gagal Upload', 'Terjadi kesalahan saat mengupload gambar: ' . $e->getMessage());
+                return redirect()->back()->withInput();
+            }
+        }
 
-        // Simpan path relatif
-        $data['gambar'] = 'menu/' . $nama_file;
+        $menu = Menu::create($data);
+
+        if ($menu) {
+            alert()->success('Berhasil', 'Produk berhasil ditambahkan.');
+        } else {
+            alert()->error('Gagal', 'Terjadi kesalahan saat menambahkan produk.');
+            return redirect()->back()->withInput(); // Kembali dengan input jika gagal simpan
+        }
+
+        return redirect()->route('produk.index');
     }
-
-    Menu::create($data);
-
-    return redirect()->route('produk.index')->with('success', 'Produk berhasil ditambahkan.');
-}
 
 
     /**
@@ -101,33 +114,44 @@ class ProdukController extends Controller
             'kategori' => 'required|in:makanan,minuman',
             'harga' => 'required|integer|min:0',
             'stok' => 'required|integer|min:0',
-            'gambar' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'gambar' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048', // Tambahkan webp jika perlu
         ]);
-    
+
         $produk = Menu::findOrFail($id);
         $data = $request->all();
-    
+
         if ($request->hasFile('gambar')) {
-            // Hapus gambar lama jika ada
-            if ($produk->gambar && file_exists(public_path('storage/' . $produk->gambar))) {
-                unlink(public_path('storage/' . $produk->gambar));
+            try {
+                // Hapus gambar lama jika ada dan file-nya memang ada
+                if ($produk->gambar && file_exists(public_path('storage/' . $produk->gambar))) {
+                    unlink(public_path('storage/' . $produk->gambar));
+                } elseif ($produk->gambar && Storage::disk('public')->exists($produk->gambar)) {
+                    // Alternatif jika path disimpan tanpa 'menu/' prefix di DB dan menggunakan Storage facade
+                    // Storage::disk('public')->delete($produk->gambar);
+                }
+
+                $gambar = $request->file('gambar');
+                $nama_file = time() . '_' . preg_replace('/\s+/', '_', $gambar->getClientOriginalName());
+                $gambar->move(public_path('storage/menu'), $nama_file);
+                $data['gambar'] = 'menu/' . $nama_file;
+            } catch (\Exception $e) {
+                alert()->error('Gagal Upload', 'Terjadi kesalahan saat mengupload gambar baru: ' . $e->getMessage());
+                return redirect()->back()->withInput();
             }
-    
-            $gambar = $request->file('gambar');
-            $nama_file = time() . '_' . preg_replace('/\s+/', '_', $gambar->getClientOriginalName());
-    
-            // Simpan ke public/storage/menu
-            $gambar->move(public_path('storage/menu'), $nama_file);
-    
-            // Simpan path relatif
-            $data['gambar'] = 'menu/' . $nama_file;
         }
-    
-        $produk->update($data);
-    
-        return redirect()->route('produk.index')->with('success', 'Produk berhasil diperbarui.');
+
+        $updated = $produk->update($data);
+
+        if ($updated) {
+            alert()->success('Berhasil', 'Produk berhasil diperbarui.');
+        } else {
+            alert()->error('Gagal', 'Terjadi kesalahan saat memperbarui produk.');
+            return redirect()->back()->withInput();
+        }
+
+        return redirect()->route('produk.index');
     }
-    
+
 
     /**
      * Remove the specified resource from storage.
@@ -136,13 +160,34 @@ class ProdukController extends Controller
     {
         $produk = Menu::findOrFail($id);
 
-        // Hapus gambar jika ada
-        if ($produk->gambar) {
-            Storage::delete('public/menu/' . $produk->gambar);
+        try {
+            // Hapus gambar dari storage jika ada
+            // Pastikan path yang digunakan untuk menyimpan dan menghapus konsisten
+            if ($produk->gambar) {
+                // Jika path di DB adalah 'menu/namafile.jpg'
+                $pathGambarPublic = 'storage/' . $produk->gambar; // Path relatif dari public folder
+                if (file_exists(public_path($pathGambarPublic))) {
+                    unlink(public_path($pathGambarPublic));
+                }
+                // Atau jika Anda menyimpan path lengkap atau menggunakan Storage facade dengan disk 'public'
+                // if (Storage::disk('public')->exists($produk->gambar)) {
+                //     Storage::disk('public')->delete($produk->gambar);
+                // }
+            }
+
+            $deleted = $produk->delete();
+
+            if ($deleted) {
+                alert()->success('Berhasil', 'Produk berhasil dihapus.');
+            } else {
+                // Ini jarang terjadi jika findOrFail berhasil dan tidak ada exception lain
+                alert()->error('Gagal', 'Produk gagal dihapus.');
+            }
+        } catch (\Exception $e) {
+            // Menangkap exception lain yang mungkin terjadi (misalnya, masalah foreign key constraint)
+            alert()->error('Gagal', 'Terjadi kesalahan saat menghapus produk: ' . $e->getMessage());
         }
 
-        $produk->delete();
-
-        return redirect()->route('produk.index')->with('success', 'Produk berhasil dihapus.');
+        return redirect()->route('produk.index');
     }
 }

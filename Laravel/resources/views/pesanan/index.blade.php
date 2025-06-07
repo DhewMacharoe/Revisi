@@ -1,36 +1,51 @@
 @extends('layouts.admin')
 
-@php use Illuminate\Support\Str; @endphp
+@php use Illuminate\Support\Str; @endphp {{-- Ini bisa dihapus jika Str tidak digunakan lagi setelah modifikasi WhatsApp --}}
 
-@section('title', 'Menejemen Pesanan - DelBites')
+@section('title', 'Manajemen Pesanan - DelBites')
 
-@section('page-title', 'Menejemen Pesanan')
+@section('page-title', 'Manajemen Pesanan')
 
 @section('content')
     <div class="container-fluid">
+        {{-- Navigasi Tab untuk Status --}}
+        <ul class="nav nav-tabs mb-3">
+            <li class="nav-item">
+                <a class="nav-link {{ $activeTab == 'diproses' ? 'active' : '' }}"
+                   href="{{ route('pesanan.index', array_merge(request()->except(['page', 'status']), ['active_tab' => 'diproses'])) }}">
+                    Diproses
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ $activeTab == 'selesai' ? 'active' : '' }}"
+                   href="{{ route('pesanan.index', array_merge(request()->except(['page', 'status']), ['active_tab' => 'selesai'])) }}">
+                    Selesai
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ $activeTab == 'dibatalkan' ? 'active' : '' }}"
+                   href="{{ route('pesanan.index', array_merge(request()->except(['page', 'status']), ['active_tab' => 'dibatalkan'])) }}">
+                    Dibatalkan
+                </a>
+            </li>
+            {{-- Anda bisa menambahkan tab "Semua" jika diperlukan --}}
+            {{-- <li class="nav-item">
+                <a class="nav-link {{ $activeTab == 'semua' ? 'active' : '' }}"
+                   href="{{ route('pesanan.index', array_merge(request()->except(['page', 'status']), ['active_tab' => 'semua'])) }}">
+                    Semua Pesanan
+                </a>
+            </li> --}}
+        </ul>
+
         <div class="row mb-4">
             <div class="col-md-12">
                 <div class="card border-0 shadow-sm">
                     <div class="card-body">
+                        {{-- Form Filter --}}
                         <form action="{{ route('pesanan.index') }}" method="GET" class="row g-3">
-                            <div class="col-md-4">
-                                <label for="status" class="form-label">Filter Status</label>
-                                <select name="status" id="status" class="form-select">
-                                    <option value="">Semua Status</option>
-                                    <option value="menunggu" {{ request('status') == 'menunggu' ? 'selected' : '' }}>
-                                        Menunggu</option>
-                                    <option value="pembayaran" {{ request('status') == 'pembayaran' ? 'selected' : '' }}>
-                                        Pembayaran</option>
-                                    <option value="dibayar" {{ request('status') == 'dibayar' ? 'selected' : '' }}>Dibayar
-                                    </option>
-                                    <option value="diproses" {{ request('status') == 'diproses' ? 'selected' : '' }}>
-                                        Diproses</option>
-                                    <option value="selesai" {{ request('status') == 'selesai' ? 'selected' : '' }}>Selesai
-                                    </option>
-                                    <option value="dibatalkan" {{ request('status') == 'dibatalkan' ? 'selected' : '' }}>
-                                        Dibatalkan</option>
-                                </select>
-                            </div>
+                            {{-- Input tersembunyi untuk mempertahankan status tab aktif saat filter --}}
+                            <input type="hidden" name="active_tab" value="{{ $activeTab }}">
+
                             <div class="col-md-4">
                                 <label for="metode_pembayaran" class="form-label">Filter Pembayaran</label>
                                 <select name="metode_pembayaran" id="metode_pembayaran" class="form-select">
@@ -44,9 +59,18 @@
                                         Bank</option>
                                 </select>
                             </div>
-                            <div class="col-md-4 d-flex align-items-end">
-                                <button type="submit" class="btn btn-primary me-2">Filter</button>
-                                <a href="{{ route('pesanan.index') }}" class="btn btn-secondary">Reset</a>
+                            <div class="col-md-5">
+                                <label for="menu_search" class="form-label">Cari Nama Menu dalam Pesanan</label>
+                                <input type="text" class="form-control" id="menu_search" name="menu_search"
+                                       value="{{ request('menu_search') }}" placeholder="Contoh: Ayam Bakar, Es Teh...">
+                            </div>
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary me-2">
+                                    <i class="fas fa-filter me-1"></i> Filter
+                                </button>
+                                <a href="{{ route('pesanan.index', ['active_tab' => $activeTab]) }}" class="btn btn-secondary">
+                                    <i class="fas fa-sync-alt me-1"></i> Reset
+                                </a>
                             </div>
                         </form>
                     </div>
@@ -58,7 +82,9 @@
             <div class="col-md-12">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Daftar Pesanan</h5>
+                        <h5 class="mb-0">Daftar Pesanan ({{ ucfirst($activeTab) }})</h5>
+                        {{-- Tombol Tambah Pesanan jika ada --}}
+                        {{-- <a href="{{ route('pesanan.create') }}" class="btn btn-primary">Tambah Pesanan</a> --}}
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
@@ -78,31 +104,35 @@
                                     @forelse($pesanan as $p)
                                         <tr>
                                             <td>#{{ $p->id }}</td>
-                                            <td>{{ $p->pelanggan->nama }}</td>
+                                            <td>{{ $p->pelanggan->nama ?? 'N/A' }}</td>
                                             <td>{{ $p->created_at->format('d/m/Y H:i') }}</td>
                                             <td>Rp {{ number_format($p->total_harga, 0, ',', '.') }}</td>
                                             <td>
                                                 @if ($p->metode_pembayaran == 'tunai')
-                                                    <span class="badge bg-success">Tunai</span>
+                                                    <span class="badge text-bg-success">Tunai</span>
                                                 @elseif($p->metode_pembayaran == 'qris')
-                                                    <span class="badge bg-info">QRIS</span>
+                                                    <span class="badge text-bg-info">QRIS</span>
                                                 @elseif($p->metode_pembayaran == 'transfer bank')
-                                                    <span class="badge bg-primary">Transfer Bank</span>
+                                                    <span class="badge text-bg-primary">Transfer Bank</span>
+                                                @else
+                                                    <span class="badge text-bg-light">{{ ucfirst($p->metode_pembayaran) }}</span>
                                                 @endif
                                             </td>
                                             <td>
                                                 @if ($p->status == 'menunggu')
-                                                    <span class="badge bg-warning">Menunggu</span>
+                                                    <span class="badge text-bg-warning">Menunggu</span>
                                                 @elseif($p->status == 'pembayaran')
-                                                    <span class="badge bg-info">Pembayaran</span>
+                                                    <span class="badge text-bg-info">Pembayaran</span>
                                                 @elseif($p->status == 'dibayar')
-                                                    <span class="badge bg-primary">Dibayar</span>
+                                                    <span class="badge text-bg-primary">Dibayar</span>
                                                 @elseif($p->status == 'diproses')
-                                                    <span class="badge bg-secondary">Diproses</span>
+                                                    <span class="badge text-bg-secondary">Diproses</span>
                                                 @elseif($p->status == 'selesai')
-                                                    <span class="badge bg-success">Selesai</span>
+                                                    <span class="badge text-bg-success">Selesai</span>
                                                 @elseif($p->status == 'dibatalkan')
-                                                    <span class="badge bg-danger">Dibatalkan</span>
+                                                    <span class="badge text-bg-danger">Dibatalkan</span>
+                                                @else
+                                                    <span class="badge text-bg-light">{{ ucfirst($p->status) }}</span>
                                                 @endif
                                             </td>
                                             <td>
@@ -117,7 +147,11 @@
                                                         <li>
                                                             <a class="dropdown-item detail-btn" href="#"
                                                                 data-bs-toggle="modal" data-bs-target="#detailModal"
-                                                                data-id="{{ $p->id }}">
+                                                                data-id="{{ $p->id }}" data-nama-pelanggan="{{ $p->pelanggan->nama ?? 'N/A' }}"
+                                                                data-telepon-pelanggan="{{ $p->pelanggan->telepon ?? '-' }}"
+                                                                data-tanggal-pesanan="{{ $p->created_at->format('d M Y, H:i') }}"
+                                                                data-total-harga="Rp {{ number_format($p->total_harga, 0, ',', '.') }}"
+                                                                data-metode-pembayaran="{{ ucfirst($p->metode_pembayaran) }}">
                                                                 <i class="fas fa-eye me-2"></i> Lihat Detail
                                                             </a>
                                                         </li>
@@ -131,77 +165,85 @@
                                                             </li>
                                                         @endif
                                                         @php
-                                                            $telepon = preg_replace(
-                                                                '/[^0-9]/',
-                                                                '',
-                                                                $p->pelanggan->telepon,
-                                                            );
+                                                            $telepon = preg_replace('/[^0-9]/', '', $p->pelanggan->telepon ?? '');
                                                             if (Str::startsWith($telepon, '0')) {
                                                                 $telepon = '62' . substr($telepon, 1);
+                                                            } elseif (!Str::startsWith($telepon, '62') && !empty($telepon)) {
+                                                                $telepon = '62' . $telepon;
                                                             }
 
+
                                                             $statusText = match ($p->status) {
-                                                                'menunggu'
-                                                                    => 'Pesanan Anda sedang menunggu konfirmasi.',
+                                                                'menunggu' => 'Pesanan Anda sedang menunggu konfirmasi.',
                                                                 'pembayaran' => 'Silakan segera lakukan pembayaran.',
                                                                 'dibayar' => 'Pembayaran Anda telah kami terima.',
-                                                                'diproses' => 'Pesanan Anda sedang diproses.',
-                                                                'selesai'
-                                                                    => 'Pesanan Anda telah selesai. Terima kasih!',
+                                                                'diproses' => 'Pesanan Anda sedang kami proses di dapur.',
+                                                                'selesai' => 'Pesanan Anda telah selesai dan siap diambil/diantar. Terima kasih!',
                                                                 'dibatalkan' => 'Pesanan Anda telah dibatalkan.',
-                                                                default => 'Status pesanan Anda: ' . $p->status,
+                                                                default => 'Status pesanan Anda: ' . ucfirst($p->status),
                                                             };
 
-                                                            $pesan =
-                                                                "Halo {$p->pelanggan->nama},\n\nPesanan Anda di *DelBites*:\nTotal: Rp " .
-                                                                number_format($p->total_harga, 0, ',', '.') .
-                                                                "\nStatus: *" .
-                                                                ucfirst($p->status) .
-                                                                "*\n\n" .
-                                                                $statusText .
-                                                                "\n\nTerima kasih telah memesan.";
+                                                            $pesanWA = "Halo {$p->pelanggan->nama},\n\n";
+                                                            $pesanWA .= "Pesanan Anda di *DelBites* dengan ID #{$p->id}:\n";
+                                                            $pesanWA .= "Total: Rp " . number_format($p->total_harga, 0, ',', '.') . "\n";
+                                                            $pesanWA .= "Status: *" . ucfirst($p->status) . "*\n\n";
+                                                            $pesanWA .= $statusText . "\n\n";
+                                                            // Daftar menu bisa ditambahkan jika perlu, tapi bisa membuat pesan panjang
+                                                            // foreach($p->detail_pemesanan as $item) {
+                                                            // $pesanWA .= "- {$item->menu->nama_menu} x {$item->jumlah}\n";
+                                                            // }
+                                                            $pesanWA .= "Terima kasih telah memesan di DelBites!";
                                                         @endphp
-
-                                                        <a class="dropdown-item"
-                                                            href="https://wa.me/{{ $telepon }}?text={{ urlencode($pesan) }}"
-                                                            target="_blank">
-                                                            <i class="fab fa-whatsapp me-2"></i> Hubungi Pelanggan
-                                                        </a>
-
-
-                                                        @if (!in_array($p->status, ['selesai', 'dibatalkan']))
-                                                            <div class="dropdown-divider"></div>
-                                                            <form
-                                                                action="{{ route('pesanan.status', ['id' => $p->id, 'status' => 'diproses']) }}"
-                                                                method="POST">
-                                                                @csrf
-                                                                <button class="dropdown-item" type="submit"><i
-                                                                        class="fas fa-cogs"></i> Tandai Diproses</button>
-                                                            </form>
-                                                            <form
-                                                                action="{{ route('pesanan.status', ['id' => $p->id, 'status' => 'selesai']) }}"
-                                                                method="POST">
-                                                                @csrf
-                                                                <button class="dropdown-item" type="submit"><i
-                                                                        class="fas fa-check-circle"></i> Tandai
-                                                                    Selesai</button>
-                                                            </form>
-                                                            <form
-                                                                action="{{ route('pesanan.status', ['id' => $p->id, 'status' => 'dibatalkan']) }}"
-                                                                method="POST">
-                                                                @csrf
-                                                                <button class="dropdown-item text-danger" type="submit"><i
-                                                                        class="fas fa-times-circle"></i> Batalkan</button>
-                                                            </form>
+                                                        @if(!empty($telepon))
+                                                        <li>
+                                                            <a class="dropdown-item"
+                                                                href="https://wa.me/{{ $telepon }}?text={{ urlencode($pesanWA) }}"
+                                                                target="_blank">
+                                                                <i class="fab fa-whatsapp me-2"></i> Hubungi Pelanggan
+                                                            </a>
+                                                        </li>
                                                         @endif
 
+                                                        @if (!in_array($p->status, ['selesai', 'dibatalkan']))
+                                                            <li><hr class="dropdown-divider"></li>
+                                                            @if($p->status !== 'diproses')
+                                                            <li>
+                                                                <form action="{{ route('pesanan.status', ['id' => $p->id, 'status' => 'diproses']) }}" method="POST" class="form-status-change">
+                                                                    @csrf
+                                                                    <button class="dropdown-item" type="submit" data-status-baru="Diproses">
+                                                                        <i class="fas fa-cogs me-2"></i> Tandai Diproses
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                            @endif
+                                                            @if($p->status !== 'selesai')
+                                                            <li>
+                                                                <form action="{{ route('pesanan.status', ['id' => $p->id, 'status' => 'selesai']) }}" method="POST" class="form-status-change">
+                                                                    @csrf
+                                                                    <button class="dropdown-item" type="submit" data-status-baru="Selesai">
+                                                                        <i class="fas fa-check-circle me-2"></i> Tandai Selesai
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                            @endif
+                                                             @if($p->status !== 'dibatalkan')
+                                                            <li>
+                                                                <form action="{{ route('pesanan.status', ['id' => $p->id, 'status' => 'dibatalkan']) }}" method="POST" class="form-status-change form-batalkan">
+                                                                    @csrf
+                                                                    <button class="dropdown-item text-danger" type="submit" data-status-baru="Dibatalkan">
+                                                                        <i class="fas fa-times-circle me-2"></i> Batalkan Pesanan
+                                                                    </button>
+                                                                </form>
+                                                            </li>
+                                                            @endif
+                                                        @endif
                                                     </ul>
                                                 </div>
                                             </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="7" class="text-center">Tidak ada data pesanan</td>
+                                            <td colspan="7" class="text-center">Tidak ada data pesanan untuk status "{{ ucfirst($activeTab) }}"</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -209,7 +251,7 @@
                         </div>
 
                         <div class="d-flex justify-content-center mt-4">
-                            {{ $pesanan->appends(request()->query())->links() }}
+                            {{ $pesanan->links() }} {{-- Pagination links akan otomatis menyertakan parameter filter dari appends() di controller --}}
                         </div>
                     </div>
                 </div>
@@ -217,45 +259,17 @@
         </div>
     </div>
 
-    <!-- Modal Detail Pesanan -->
     <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable"> {{-- Ditambahkan modal-dialog-scrollable --}}
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="detailModalLabel">Detail Pesanan #<span id="pesananId"></span></h5>
+                    <h5 class="modal-title" id="detailModalLabel">Detail Pesanan #<span id="pesananIdModal"></span></h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6">
-                            <p><strong>ID Pelanggan:</strong> <span id="idPelanggan"></span></p>
-                            <p><strong>Nama Pelanggan:</strong> <span id="namaPelanggan"></span></p>
-                            <p><strong>Telepon:</strong> <span id="teleponPelanggan"></span></p>
-                        </div>
-                        <div class="col-md-6">
-                            <p><strong>Tanggal Pesanan:</strong> <span id="tanggalPesanan"></span></p>
-                            <p><strong>Total:</strong> <span id="totalHarga"></span></p>
-                            <p><strong>Metode Pembayaran:</strong> <span id="metodePembayaran"></span></p>
-                        </div>
-                    </div>
-
-                    <h6 class="mb-3">Daftar Pesanan</h6>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Nama Makanan</th>
-                                    <th>Harga</th>
-                                    <th>Jumlah</th>
-                                    <th>Subtotal</th>
-                                    <th>Catatan</th>
-                                    <th>Suhu</th>
-                                </tr>
-                            </thead>
-                            <tbody id="detailPesananBody">
-                                <!-- Data akan diisi melalui JavaScript -->
-                            </tbody>
-                        </table>
+                    <div id="detailPesananContent">
+                        {{-- Konten akan diisi oleh JavaScript --}}
+                        <div class="text-center">Memuat data... <i class="fas fa-spinner fa-spin"></i></div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -267,99 +281,144 @@
 @endsection
 
 @section('scripts')
-    <script>
-        // Script untuk mengambil detail pesanan saat modal dibuka
-        document.addEventListener('DOMContentLoaded', function() {
-            const detailModal = document.getElementById('detailModal');
+@parent {{-- Jika ada script di layout utama yang ingin dipertahankan --}}
+{{-- Jika menggunakan CDN SweetAlert dan belum ada di layout utama, uncomment baris di bawah --}}
+{{-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css"> --}}
+{{-- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script> --}}
 
-            detailModal.addEventListener('show.bs.modal', function(event) {
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Auto submit form filter pembayaran jika berubah
+        const metodePembayaranSelect = document.getElementById('metode_pembayaran');
+        if (metodePembayaranSelect) {
+            metodePembayaranSelect.addEventListener('change', function() {
+                this.closest('form').submit();
+            });
+        }
+        // Untuk menu_search, biarkan pengguna menekan tombol Filter manual karena ini input teks
+
+        // Modal Detail Pesanan
+        const detailModalElement = document.getElementById('detailModal');
+        const detailPesananContent = document.getElementById('detailPesananContent');
+
+        if (detailModalElement) {
+            detailModalElement.addEventListener('show.bs.modal', function(event) {
                 const button = event.relatedTarget;
-                const id = button.getAttribute('data-id');
+                const pesananId = button.getAttribute('data-id');
+                document.getElementById('pesananIdModal').textContent = pesananId; // Update ID di judul modal
 
-                // Fetch detail pesanan dari server
-                fetch(`/pesanan/${id}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        // Isi data ke dalam modal
-                        document.getElementById('pesananId').textContent = data.id;
-                        document.getElementById('idPelanggan').textContent = data.id_pelanggan;
-                        document.getElementById('namaPelanggan').textContent = data.pelanggan.nama;
-                        document.getElementById('teleponPelanggan').textContent = data.pelanggan
-                            .telepon || '-';
-                        document.getElementById('tanggalPesanan').textContent = new Date(data
-                            .created_at).toLocaleString('id-ID');
-                        document.getElementById('totalHarga').textContent = 'Rp ' + new Intl
-                            .NumberFormat('id-ID').format(data.total_harga);
+                // Tampilkan loading
+                detailPesananContent.innerHTML = '<div class="text-center">Memuat data... <i class="fas fa-spinner fa-spin"></i></div>';
 
-                        let metodePembayaran = '';
-                        switch (data.metode_pembayaran) {
-                            case 'tunai':
-                                metodePembayaran = 'Tunai';
-                                break;
-                            case 'qris':
-                                metodePembayaran = 'QRIS';
-                                break;
-                            case 'transfer bank':
-                                metodePembayaran = 'Transfer Bank';
-                                break;
-                            default:
-                                metodePembayaran = data.metode_pembayaran;
+                fetch(`/pesanan/${pesananId}`) // Pastikan route ini ada dan mengembalikan JSON
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok: ' + response.statusText);
                         }
-                        document.getElementById('metodePembayaran').textContent = metodePembayaran;
+                        return response.json();
+                    })
+                    .then(data => {
+                        let detailHtml = `
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <p><strong>Nama Pelanggan:</strong> ${data.pelanggan.nama || '-'}</p>
+                                    <p><strong>Telepon:</strong> ${data.pelanggan.telepon || '-'}</p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Tanggal Pesanan:</strong> ${new Date(data.created_at).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                                    <p><strong>Total:</strong> Rp ${new Intl.NumberFormat('id-ID').format(data.total_harga)}</p>
+                                    <p><strong>Metode Pembayaran:</strong> ${data.metode_pembayaran ? data.metode_pembayaran.charAt(0).toUpperCase() + data.metode_pembayaran.slice(1) : '-'}</p>
+                                </div>
+                            </div>
+                            <h6>Item Pesanan:</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Menu</th>
+                                            <th>Harga</th>
+                                            <th>Jml</th>
+                                            <th>Subtotal</th>
+                                            <th>Catatan</th>
+                                            <th>Suhu</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>`;
 
-                        // Isi tabel detail pesanan
-                        const detailBody = document.getElementById('detailPesananBody');
-                        detailBody.innerHTML = '';
-
-                        data.detail_pemesanan.forEach(detail => {
-                            const row = document.createElement('tr');
-
-                            const namaMakanan = document.createElement('td');
-                            namaMakanan.textContent = detail.menu.nama_menu;
-
-                            const harga = document.createElement('td');
-                            harga.textContent = 'Rp ' + new Intl.NumberFormat('id-ID').format(
-                                detail.harga_satuan);
-
-                            const jumlah = document.createElement('td');
-                            jumlah.textContent = detail.jumlah;
-
-                            const subtotal = document.createElement('td');
-                            subtotal.textContent = 'Rp ' + new Intl.NumberFormat('id-ID')
-                                .format(detail.subtotal);
-
-                            const catatan = document.createElement('td');
-                            catatan.textContent = detail.catatan ||
-                            '-'; // tampilkan '-' jika kosong
-
-                            const suhu = document.createElement('td');
-                            suhu.textContent = detail.suhu || '-'; // tampilkan '-' jika kosong
-
-
-                            row.appendChild(namaMakanan);
-                            row.appendChild(harga);
-                            row.appendChild(jumlah);
-                            row.appendChild(subtotal);
-                            row.appendChild(catatan); // Tambahkan catatan
-                            row.appendChild(suhu); // Tambahkan suhu
-
-                            detailBody.appendChild(row);
+                        data.detail_pemesanan.forEach(item => {
+                            detailHtml += `
+                                <tr>
+                                    <td>${item.menu ? item.menu.nama_menu : 'Menu Dihapus'}</td>
+                                    <td>Rp ${new Intl.NumberFormat('id-ID').format(item.harga_satuan)}</td>
+                                    <td>${item.jumlah}</td>
+                                    <td>Rp ${new Intl.NumberFormat('id-ID').format(item.subtotal)}</td>
+                                    <td>${item.catatan || '-'}</td>
+                                    <td>${item.suhu || '-'}</td>
+                                </tr>`;
                         });
+
+                        detailHtml += `
+                                    </tbody>
+                                </table>
+                            </div>`;
+                        detailPesananContent.innerHTML = detailHtml;
                     })
                     .catch(error => {
-                        console.error('Error:', error);
-                        alert('Terjadi kesalahan saat mengambil data pesanan.');
+                        console.error('Error fetching pesanan detail:', error);
+                        detailPesananContent.innerHTML = '<p class="text-danger">Gagal memuat detail pesanan. Silakan coba lagi.</p>';
                     });
             });
+        }
 
-            // Auto submit form saat filter berubah
-            document.getElementById('status').addEventListener('change', function() {
-                this.form.submit();
-            });
+        // SweetAlert untuk form perubahan status
+        const statusChangeForms = document.querySelectorAll('.form-status-change');
+        statusChangeForms.forEach(form => {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const currentForm = this;
+                const statusAction = currentForm.action;
+                const statusButton = currentForm.querySelector('button[type="submit"]');
+                const statusBaru = statusButton.dataset.statusBaru || "status baru"; // ambil dari data-attribute
 
-            document.getElementById('metode_pembayaran').addEventListener('change', function() {
-                this.form.submit();
+                let confirmButtonColor = '#3085d6'; // default biru
+                let confirmText = `Ya, tandai ${statusBaru}!`;
+                let titleText = `Ubah status menjadi "${statusBaru}"?`;
+                let textMessage = "Pastikan Anda sudah melakukan tindakan yang sesuai.";
+
+                if (form.classList.contains('form-batalkan')) {
+                    confirmButtonColor = '#d33'; // merah untuk batalkan
+                    confirmText = 'Ya, batalkan pesanan!';
+                    titleText = 'Batalkan Pesanan Ini?';
+                    textMessage = "Pesanan yang dibatalkan tidak dapat diubah kembali.";
+                }
+
+
+                // Pastikan Swal ada sebelum memanggilnya
+                if (typeof Swal === 'undefined') {
+                    console.error('SweetAlert (Swal) is not loaded!');
+                    if (confirm(`${titleText}\n${textMessage}`)) { // Fallback ke confirm browser
+                        currentForm.submit();
+                    }
+                    return;
+                }
+
+                Swal.fire({
+                    title: titleText,
+                    text: textMessage,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: confirmButtonColor,
+                    cancelButtonColor: '#6c757d', // abu-abu untuk batal
+                    confirmButtonText: confirmText,
+                    cancelButtonText: 'Tidak'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        currentForm.submit();
+                    }
+                });
             });
         });
-    </script>
+
+    });
+</script>
 @endsection
