@@ -41,7 +41,7 @@ class _KeranjangPageState extends State<KeranjangPage> {
   Future<void> _loadKeranjang() async {
     try {
       final response = await http.get(Uri.parse(
-          'http://localhost/api/keranjang/pelanggan/${widget.idPelanggan}'));
+          'http://127.0.0.1:8000/api/keranjang/pelanggan/${widget.idPelanggan}'));
 
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
@@ -103,7 +103,7 @@ class _KeranjangPageState extends State<KeranjangPage> {
       final item = pesanan[index];
 
       final response = await http.put(
-        Uri.parse('http://localhost/api/keranjang/${item['id']}'),
+        Uri.parse('http://127.0.0.1:8000/api/keranjang/${item['id']}'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'jumlah': newQuantity}),
       );
@@ -127,7 +127,7 @@ class _KeranjangPageState extends State<KeranjangPage> {
     try {
       final item = pesanan[index];
       final response = await http.delete(
-        Uri.parse('http://localhost/api/keranjang/${item['id']}'),
+        Uri.parse('http://127.0.0.1:8000/api/keranjang/${item['id']}'),
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -230,7 +230,7 @@ class _KeranjangPageState extends State<KeranjangPage> {
               children: [
                 item['image'] != null
                     ? Image.network(
-                        'http://localhost/storage/${item['image']}',
+                        'http://127.0.0.1:8000/storage/${item['image']}',
                         width: 40,
                         height: 40,
                         fit: BoxFit.cover,

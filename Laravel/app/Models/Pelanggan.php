@@ -14,7 +14,7 @@ class Pelanggan extends Model
     protected $fillable = [
         'nama',
         'telepon',
-        'device_id',
+        'email',
     ];
     public function pemesanan()
     {

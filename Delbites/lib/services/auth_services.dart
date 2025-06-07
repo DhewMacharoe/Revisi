@@ -9,7 +9,7 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   String _verificationId = '';
-  static const String baseUrl = 'http://localhost';
+  static const String baseUrl = 'http://127.0.0.1:8000';
 
   Future<bool> sendOTP(String phoneNumber) async {
     try {

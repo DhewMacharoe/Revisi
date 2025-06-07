@@ -1,3 +1,4 @@
+import 'package:Delbites/edit_profile_page.dart'; // <-- Import halaman edit profil
 import 'package:Delbites/login_page.dart'; // Import halaman login baru
 import 'package:Delbites/main_screen.dart'; // Import MainScreen untuk navigasi setelah logout
 import 'package:Delbites/register_page.dart'; // Import halaman register baru
@@ -28,18 +29,23 @@ class _ProfilePageState extends State<ProfilePage> {
 
   // Fungsi untuk memuat data profil dari SharedPreferences
   Future<void> _loadProfileData() async {
-    final prefs = await SharedPreferences.getInstance();
     setState(() {
-      _nama = prefs.getString('nama_pelanggan') ?? 'Belum tersedia';
-      _telepon = prefs.getString('telepon_pelanggan') ?? 'Belum tersedia';
-      _email = prefs.getString('email_pelanggan') ?? 'Belum tersedia';
-      // Tentukan status login berdasarkan ketersediaan nama pelanggan atau idPelanggan
-      _isLoggedIn = (prefs.getString('nama_pelanggan') != null &&
-              prefs.getString('nama_pelanggan')!.isNotEmpty) ||
-          (prefs.getInt('id_pelanggan') != null &&
-              prefs.getInt('id_pelanggan')! != 0); // Periksa juga idPelanggan
-      _isLoading = false;
+      _isLoading = true; // Set loading true when reloading
     });
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      // Check if the widget is still in the tree
+      setState(() {
+        _nama = prefs.getString('nama_pelanggan') ?? 'Belum tersedia';
+        _telepon = prefs.getString('telepon_pelanggan') ?? 'Belum tersedia';
+        _email = prefs.getString('email_pelanggan') ?? 'Belum tersedia';
+        _isLoggedIn = (prefs.getString('nama_pelanggan') != null &&
+                prefs.getString('nama_pelanggan')!.isNotEmpty) ||
+            (prefs.getInt('id_pelanggan') != null &&
+                prefs.getInt('id_pelanggan')! != 0);
+        _isLoading = false;
+      });
+    }
   }
 
   // Fungsi untuk menghapus data pelanggan dari SharedPreferences (Logout)
@@ -49,14 +55,28 @@ class _ProfilePageState extends State<ProfilePage> {
     await prefs.remove('nama_pelanggan');
     await prefs.remove('telepon_pelanggan');
     await prefs.remove('email_pelanggan');
+    await prefs
+        .remove('isLoggedIn'); // Clear login status if you set it elsewhere
 
-    // Navigasi kembali ke MainScreen dan hapus semua rute sebelumnya
     if (mounted) {
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (context) => const MainScreen()),
-        (Route<dynamic> route) => false, // Hapus semua rute sebelumnya
+        (Route<dynamic> route) => false,
       );
+    }
+  }
+
+  // Fungsi untuk navigasi ke halaman edit profil
+  Future<void> _navigateToEditProfile() async {
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const EditProfilePage()),
+    );
+
+    // Jika result adalah true, berarti ada perubahan yang disimpan
+    if (result == true && mounted) {
+      _loadProfileData(); // Muat ulang data profil untuk menampilkan perubahan
     }
   }
 
@@ -69,20 +89,16 @@ class _ProfilePageState extends State<ProfilePage> {
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: const Color(0xFF2D5EA2),
-        iconTheme:
-            const IconThemeData(color: Colors.white), // Warna ikon kembali
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: _isLoading
-          ? const Center(
-              child:
-                  CircularProgressIndicator()) // Tampilkan loading jika data masih dimuat
+          ? const Center(child: CircularProgressIndicator())
           : Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Bagian Login/Informasi Pengguna
-                  if (!_isLoggedIn) // Jika belum login, tampilkan pesan dan tombol login/register
+                  if (!_isLoggedIn)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -102,15 +118,13 @@ class _ProfilePageState extends State<ProfilePage> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (context) => const LoginPage()),
-                              ).then((_) =>
-                                  _loadProfileData()); // Muat ulang data setelah kembali
+                              ).then((_) => _loadProfileData());
                             },
                             icon: const Icon(Icons.login, color: Colors.white),
                             label: const Text('Login',
                                 style: TextStyle(color: Colors.white)),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors
-                                  .green, // Warna hijau untuk tombol login
+                              backgroundColor: Colors.green,
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -118,7 +132,7 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                         ),
-                        const SizedBox(height: 10), // Spasi antara tombol
+                        const SizedBox(height: 10),
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton.icon(
@@ -127,16 +141,14 @@ class _ProfilePageState extends State<ProfilePage> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (context) => const RegisterPage()),
-                              ).then((_) =>
-                                  _loadProfileData()); // Muat ulang data setelah kembali
+                              ).then((_) => _loadProfileData());
                             },
                             icon: const Icon(Icons.app_registration,
-                                color: Colors.white), // Ikon registrasi
+                                color: Colors.white),
                             label: const Text('Register',
                                 style: TextStyle(color: Colors.white)),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(
-                                  0xFF2D5EA2), // Warna biru untuk tombol register
+                              backgroundColor: const Color(0xFF2D5EA2),
                               padding: const EdgeInsets.symmetric(vertical: 12),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -148,68 +160,83 @@ class _ProfilePageState extends State<ProfilePage> {
                       ],
                     )
                   else // Jika sudah login, tampilkan detail profil
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Bagian Nama
-                        Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: ListTile(
-                            leading: const Icon(Icons.person,
-                                color: Color(0xFF2D5EA2)),
-                            title: const Text('Nama'),
-                            subtitle: Text(_nama,
-                                style: const TextStyle(fontSize: 16)),
+                    Expanded(
+                      // Use Expanded to make the Column scrollable if content overflows
+                      child: ListView(
+                        // Changed Column to ListView for potential overflow
+                        children: [
+                          Card(
+                            margin: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: ListTile(
+                              leading: const Icon(Icons.person,
+                                  color: Color(0xFF2D5EA2)),
+                              title: const Text('Nama'),
+                              subtitle: Text(_nama,
+                                  style: const TextStyle(fontSize: 16)),
+                            ),
                           ),
-                        ),
-                        // Bagian Nomor Telepon
-                        Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: ListTile(
-                            leading: const Icon(Icons.phone,
-                                color: Color(0xFF2D5EA2)),
-                            title: const Text('Nomor Telepon'),
-                            subtitle: Text(_telepon,
-                                style: const TextStyle(fontSize: 16)),
+                          Card(
+                            margin: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: ListTile(
+                              leading: const Icon(Icons.phone,
+                                  color: Color(0xFF2D5EA2)),
+                              title: const Text('Nomor Telepon'),
+                              subtitle: Text(_telepon,
+                                  style: const TextStyle(fontSize: 16)),
+                            ),
                           ),
-                        ),
-                        // Bagian Email
-                        Card(
-                          margin: const EdgeInsets.symmetric(vertical: 8.0),
-                          child: ListTile(
-                            leading: const Icon(Icons.email,
-                                color: Color(0xFF2D5EA2)),
-                            title: const Text('Email'),
-                            subtitle: Text(_email,
-                                style: const TextStyle(fontSize: 16)),
+                          Card(
+                            margin: const EdgeInsets.symmetric(vertical: 8.0),
+                            child: ListTile(
+                              leading: const Icon(Icons.email,
+                                  color: Color(0xFF2D5EA2)),
+                              title: const Text('Email'),
+                              subtitle: Text(_email,
+                                  style: const TextStyle(fontSize: 16)),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        // Tombol Logout
-                        SizedBox(
-                          width: double
-                              .infinity, // Membuat tombol mengisi lebar penuh
-                          child: ElevatedButton.icon(
-                            onPressed:
-                                _logout, // Panggil fungsi logout saat ditekan
-                            icon: const Icon(Icons.logout,
-                                color: Colors.white), // Ikon logout
-                            label: const Text('Logout',
-                                style: TextStyle(
-                                    color: Colors.white)), // Teks tombol
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor:
-                                  Colors.red, // Warna latar belakang merah
-                              padding: const EdgeInsets.symmetric(
-                                  vertical: 12), // Padding vertikal
-                              shape: RoundedRectangleBorder(
-                                borderRadius:
-                                    BorderRadius.circular(8), // Sudut membulat
+                          const SizedBox(height: 20),
+                          // Tombol Edit Profil
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _navigateToEditProfile,
+                              icon: const Icon(Icons.edit, color: Colors.white),
+                              label: const Text('Edit Profil',
+                                  style: TextStyle(color: Colors.white)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    const Color(0xFF2D5EA2), // Blue color
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 10), // Space between buttons
+                          // Tombol Logout
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              onPressed: _logout,
+                              icon:
+                                  const Icon(Icons.logout, color: Colors.white),
+                              label: const Text('Logout',
+                                  style: TextStyle(color: Colors.white)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                 ],
               ),

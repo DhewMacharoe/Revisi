@@ -1,24 +1,18 @@
 import 'package:Delbites/menu_detail.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-// import 'package:uuid/uuid.dart'; // Tidak lagi diperlukan
 
-const String baseUrl = 'http://localhost';
+const String baseUrl = 'http://127.0.0.1:8000';
 
 class MenuCard extends StatelessWidget {
   final Map<String, String> item;
 
   const MenuCard({Key? key, required this.item}) : super(key: key);
-
-  // Fungsi untuk memeriksa data pelanggan dan menavigasi ke detail menu
   Future<void> checkAndNavigate(
       BuildContext context, Map<String, String> item) async {
-    // Navigasi langsung ke MenuDetail.
-    // Logika pengecekan dan pengisian data pelanggan kini ditangani di MenuDetail saat addToCart.
     _navigateToMenuDetail(context, item);
   }
 
-  // Fungsi format harga
   String formatPrice(String rawPrice) {
     final int price = int.tryParse(
             rawPrice.replaceAll('.', '').replaceAll('Rp', '').trim()) ??
@@ -26,10 +20,6 @@ class MenuCard extends StatelessWidget {
     return NumberFormat.decimalPattern('id').format(price);
   }
 
-  // Fungsi getDeviceId dihapus dari sini karena sudah dipindahkan ke isi_data.dart
-  // Future<String> getDeviceId() async { ... }
-
-  // Fungsi untuk menavigasi ke halaman detail menu
   void _navigateToMenuDetail(BuildContext context, Map<String, String> item) {
     Navigator.push(
       context,
@@ -54,7 +44,6 @@ class MenuCard extends StatelessWidget {
     return GestureDetector(
       onTap: () {
         if (!isOutOfStock) {
-          // Panggil checkAndNavigate yang sekarang langsung menavigasi
           checkAndNavigate(context, item);
         }
       },
@@ -74,7 +63,7 @@ class MenuCard extends StatelessWidget {
                     borderRadius:
                         const BorderRadius.vertical(top: Radius.circular(16)),
                     child: Image.network(
-                      'http://localhost/storage/${item['image']}',
+                      'http://127.0.0.1:8000/storage/${item['image']}',
                       height: 120,
                       width: double.infinity,
                       fit: BoxFit.cover,

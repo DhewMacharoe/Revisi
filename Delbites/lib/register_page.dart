@@ -1,28 +1,15 @@
 import 'dart:convert';
-import 'dart:io';
 
-import 'package:device_info_plus/device_info_plus.dart';
+// dart:io dan device_info_plus dihapus karena getDeviceId() dihilangkan
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String baseUrl = 'http://localhost';
-
-// Fungsi untuk mendapatkan Device ID
-Future<String> getDeviceId() async {
-  final deviceInfo = DeviceInfoPlugin();
-  if (Platform.isAndroid) {
-    final info = await deviceInfo.androidInfo;
-    return info.id;
-  } else if (Platform.isIOS) {
-    final info = await deviceInfo.iosInfo;
-    return info.identifierForVendor ?? '';
-  }
-  return '';
-}
+const String baseUrl =
+    'http://127.0.0.1:8000'; // Pastikan IP ini sesuai dengan server Anda
 
 class RegisterPage extends StatefulWidget {
-  // Nama kelas diubah menjadi RegisterPage
   const RegisterPage({Key? key}) : super(key: key);
 
   @override
@@ -39,7 +26,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void initState() {
     super.initState();
-    _loadExistingData(); // Memuat data yang sudah ada saat inisialisasi
+    _loadExistingData();
   }
 
   @override
@@ -50,51 +37,84 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  // Memuat data pelanggan yang sudah ada dari SharedPreferences
   Future<void> _loadExistingData() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _namaController.text = prefs.getString('nama_pelanggan') ?? '';
-      _nomorController.text = prefs.getString('telepon_pelanggan') ?? '';
-      _emailController.text = prefs.getString('email_pelanggan') ?? '';
-    });
+    // Fungsi ini dimaksudkan untuk memuat data jika ada registrasi yang belum selesai
+    // atau jika pengguna kembali ke halaman ini. Untuk registrasi baru murni,
+    // field biasanya kosong. Anda bisa mengosongkan controller di sini jika itu tujuannya.
+    // final prefs = await SharedPreferences.getInstance();
+    // if (mounted) {
+    //   setState(() {
+    //     _namaController.text = prefs.getString('nama_pelanggan_temp') ?? '';
+    //     _nomorController.text = prefs.getString('telepon_pelanggan_temp') ?? '';
+    //     _emailController.text = prefs.getString('email_pelanggan_temp') ?? '';
+    //   });
+    // }
   }
 
-  // Fungsi untuk mendapatkan atau membuat ID pelanggan (digunakan untuk registrasi)
   Future<int> _registerPelanggan(
       String nama, String telepon, String email) async {
     final prefs = await SharedPreferences.getInstance();
-    final deviceId = await getDeviceId();
-    if (!prefs.containsKey('device_id')) {
-      await prefs.setString('device_id', deviceId);
-    }
 
-    // Buat pelanggan baru
     final createResponse = await http.post(
       Uri.parse('$baseUrl/api/pelanggan'),
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
       body: jsonEncode({
         'nama': nama,
         'telepon': telepon,
         'email': email,
-        'device_id': deviceId,
       }),
     );
 
     if (createResponse.statusCode == 200 || createResponse.statusCode == 201) {
       final created = jsonDecode(createResponse.body);
-      final id = created['id'];
-      await prefs.setInt('id_pelanggan', id);
+      final id = created['id'] ?? created['data']?['id'];
+
+      if (id == null) {
+        throw Exception(
+            'ID pelanggan tidak ditemukan dalam response: ${createResponse.body}');
+      }
+
+      await prefs.setInt('id_pelanggan',
+          id is String ? int.parse(id) : id); // Pastikan id adalah integer
       await prefs.setString('nama_pelanggan', nama);
       await prefs.setString('telepon_pelanggan', telepon);
       await prefs.setString('email_pelanggan', email);
-      return id;
+      await prefs.setBool('isLoggedIn', true);
+      return id is String ? int.parse(id) : id;
     } else {
-      throw Exception('Gagal mendaftar pelanggan baru: ${createResponse.body}');
+      String errorMessage = 'Gagal mendaftar pelanggan baru.';
+      try {
+        final errorBody = jsonDecode(createResponse.body);
+        if (errorBody['message'] != null) {
+          errorMessage = errorBody['message'];
+        } else if (errorBody['errors'] != null && errorBody['errors'] is Map) {
+          // Handle Laravel validation errors
+          Map<String, dynamic> errors = errorBody['errors'];
+          StringBuffer messages = StringBuffer();
+          errors.forEach((key, value) {
+            if (value is List && value.isNotEmpty) {
+              messages.writeln(
+                  "${value[0]}"); // Ambil pesan error pertama untuk setiap field
+            }
+          });
+          if (messages.isNotEmpty) errorMessage = messages.toString().trim();
+        } else if (errorBody['error'] != null) {
+          errorMessage = errorBody['error'];
+        } else {
+          errorMessage =
+              'Error: ${createResponse.statusCode} - ${createResponse.reasonPhrase}. Body: ${createResponse.body}';
+        }
+      } catch (e) {
+        errorMessage =
+            'Error: ${createResponse.statusCode} - ${createResponse.reasonPhrase}. Body: ${createResponse.body}';
+      }
+      throw Exception(errorMessage);
     }
   }
 
-  // Fungsi untuk menyimpan data pelanggan (sekarang untuk registrasi)
   Future<void> _savePelangganData() async {
     if (_formKey.currentState!.validate()) {
       setState(() {
@@ -113,23 +133,24 @@ class _RegisterPageState extends State<RegisterPage> {
                 content: Text('Registrasi berhasil!'),
                 backgroundColor: Colors.green),
           );
-          // Navigasi kembali setelah data disimpan
-          Navigator.pop(
-              context, true); // Mengirimkan 'true' sebagai hasil sukses
+          Navigator.pop(context, true);
         }
       } catch (e) {
-        print('Error saving pelanggan data: $e');
+        print('Error saving pelanggan data: $e'); // Untuk debugging di console
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text('Gagal registrasi data pelanggan: $e'),
+                content: Text(
+                    'Gagal registrasi: ${e.toString().replaceFirst("Exception: ", "")}'), // Menampilkan pesan error yang lebih bersih
                 backgroundColor: Colors.red),
           );
         }
       } finally {
-        setState(() {
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -139,7 +160,7 @@ class _RegisterPageState extends State<RegisterPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          'Daftar Akun Pelanggan', // Judul diubah
+          'Daftar Akun Pelanggan',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: const Color(0xFF2D5EA2),
@@ -173,12 +194,20 @@ class _RegisterPageState extends State<RegisterPage> {
                         labelText: "Nomor WhatsApp",
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.phone),
+                        hintText: 'Contoh: 081234567890',
                       ),
                       keyboardType: TextInputType.phone,
-                      validator: (value) =>
-                          (value == null || value.trim().isEmpty)
-                              ? 'Nomor HP wajib diisi'
-                              : null,
+                      validator: (value) {
+                        if (value == null || value.trim().isEmpty) {
+                          return 'Nomor HP wajib diisi';
+                        }
+                        // Validasi sederhana untuk nomor telepon Indonesia (opsional)
+                        if (!RegExp(r'^08[0-9]{8,11}$')
+                            .hasMatch(value.trim())) {
+                          return 'Format nomor HP tidak valid. Contoh: 081234567890';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
@@ -187,13 +216,15 @@ class _RegisterPageState extends State<RegisterPage> {
                         labelText: "Email",
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.email),
+                        hintText: 'contoh@email.com',
                       ),
                       keyboardType: TextInputType.emailAddress,
                       validator: (value) {
                         if (value == null || value.trim().isEmpty) {
                           return 'Email wajib diisi';
                         }
-                        final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+                        final emailRegex = RegExp(
+                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$'); // Regex email yang lebih umum
                         if (!emailRegex.hasMatch(value.trim())) {
                           return 'Format email tidak valid';
                         }
@@ -204,13 +235,12 @@ class _RegisterPageState extends State<RegisterPage> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton.icon(
-                        onPressed: _savePelangganData,
+                        onPressed: _isLoading ? null : _savePelangganData,
                         icon: const Icon(Icons.app_registration,
-                            color: Colors.white), // Ikon registrasi
+                            color: Colors.white),
                         label: const Text('Daftar Akun',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16)), // Teks diubah
+                            style:
+                                TextStyle(color: Colors.white, fontSize: 16)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF2D5EA2),
                           padding: const EdgeInsets.symmetric(vertical: 15),

@@ -4,7 +4,7 @@ import 'package:Delbites/screens/payment/midtrans_webview.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
-const String baseUrl = 'http://localhost';
+const String baseUrl = 'http://127.0.0.1:8000';
 
 class MidtransService {
   // Create a payment transaction

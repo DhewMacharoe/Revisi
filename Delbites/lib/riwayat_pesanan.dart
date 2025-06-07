@@ -64,9 +64,9 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
         );
         return;
       }
-      final uri =
-          Uri.parse('http://localhost/api/pemesanan/pelanggan/$pelangganId')
-              .replace(queryParameters: {
+      final uri = Uri.parse(
+              'http://127.0.0.1:8000/api/pemesanan/pelanggan/$pelangganId')
+          .replace(queryParameters: {
         'status': selectedStatus,
         'page': currentPage.toString(),
       });
@@ -327,7 +327,7 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
                                           try {
                                             final res = await http.put(
                                               Uri.parse(
-                                                  'http://localhost/api/detail-pemesanan/$detailId/rating'),
+                                                  'http://127.0.0.1:8000/api/detail-pemesanan/$detailId/rating'),
                                               headers: {
                                                 'Content-Type':
                                                     'application/json'
