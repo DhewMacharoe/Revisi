@@ -4,7 +4,6 @@ import 'package:Delbites/main_screen.dart'; // Import MainScreen
 import 'package:flutter/material.dart';
 
 class WaitingPage extends StatefulWidget {
-  // Anda meneruskan 'orders' tapi tidak digunakan, ini tidak masalah.
   final List<Map<String, dynamic>> orders;
 
   const WaitingPage({Key? key, required this.orders}) : super(key: key);
@@ -16,10 +15,12 @@ class WaitingPage extends StatefulWidget {
 class _WaitingPageState extends State<WaitingPage> {
   int _counterBack = 5;
   late Timer _timerBack;
-  // Timer untuk pembatalan otomatis bisa di-handle di server,
-  // tapi untuk tampilan di UI, kita bisa tetap gunakan.
-  int _counterCancel = 300; // 5 menit
+
+  // --- UBAH BAGIAN INI ---
+  // Ubah timer dari 300 (5 menit) menjadi 900 (15 menit)
+  int _counterCancel = 900;
   late Timer _timerCancel;
+  
   bool _isCanceled = false;
 
   @override
@@ -48,7 +49,6 @@ class _WaitingPageState extends State<WaitingPage> {
         });
       } else {
         timer.cancel();
-        // Panggil fungsi navigasi yang benar
         _goToHistoryPage();
       }
     });
@@ -66,25 +66,21 @@ class _WaitingPageState extends State<WaitingPage> {
         });
       } else {
         timer.cancel();
-        if (!_isCanceled) { // Hanya batalkan jika belum dibatalkan manual
+        if (!_isCanceled) {
           _cancelOrder();
         }
       }
     });
   }
 
-  // Fungsi untuk navigasi ke MainScreen di tab Riwayat Pesanan
   void _goToHistoryPage() {
-    // Berdasarkan `main_screen.dart` Anda, RiwayatPesananPage ada di index 1
     const int riwayatIndex = 1;
 
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        // Buka MainScreen dan beritahu untuk memulai dari riwayatIndex
         builder: (context) => const MainScreen(initialIndex: riwayatIndex),
       ),
-      // Hapus semua halaman sebelumnya agar pengguna tidak bisa kembali ke waiting page
       (route) => false,
     );
   }
@@ -93,17 +89,15 @@ class _WaitingPageState extends State<WaitingPage> {
     setState(() {
       _isCanceled = true;
     });
-    // Di sini Anda bisa menambahkan logika untuk update status pesanan ke API
-    // Setelah itu, arahkan ke halaman utama
-    _goToHomePage();
+    // Di sini tidak perlu mengirim request pembatalan ke API,
+    // karena server sudah menanganinya secara otomatis.
+    // Kita hanya perlu mengarahkan pengguna.
   }
 
-  // Fungsi untuk kembali ke Halaman Utama (Home)
   void _goToHomePage() {
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        // Buka MainScreen dan mulai dari index 0 (Home)
         builder: (context) => const MainScreen(initialIndex: 0),
       ),
       (route) => false,
@@ -112,6 +106,9 @@ class _WaitingPageState extends State<WaitingPage> {
 
   @override
   Widget build(BuildContext context) {
+    String cancelMinutes = (_counterCancel ~/ 60).toString().padLeft(2, '0');
+    String cancelSeconds = (_counterCancel % 60).toString().padLeft(2, '0');
+
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20.0),
@@ -131,7 +128,7 @@ class _WaitingPageState extends State<WaitingPage> {
             const SizedBox(height: 10),
             Text(
               _isCanceled
-                  ? "Maaf, pesanan Anda telah dibatalkan karena tidak dibayar dalam 5 menit."
+                  ? "Maaf, pesanan Anda telah dibatalkan karena tidak dibayar dalam 15 menit."
                   : "Silakan bayar di kasir langsung ya teman Del. Pesanan Anda sedang kami siapkan.",
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
@@ -146,7 +143,7 @@ class _WaitingPageState extends State<WaitingPage> {
             if (!_isCanceled) const SizedBox(height: 10),
             if (!_isCanceled)
               Text(
-                "Pesanan akan batal otomatis dalam ${(_counterCancel ~/ 60).toString().padLeft(2, '0')}:${(_counterCancel % 60).toString().padLeft(2, '0')}",
+                "Pesanan akan batal otomatis dalam $cancelMinutes:$cancelSeconds",
                 style: const TextStyle(fontSize: 14, color: Colors.red),
               ),
             const SizedBox(height: 40),
