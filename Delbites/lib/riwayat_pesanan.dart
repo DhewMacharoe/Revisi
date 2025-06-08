@@ -260,35 +260,35 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
     final details = order['detail_pemesanan'] as List<dynamic>? ?? [];
     final status = order['status'].toString();
 
-    return Card(
-      elevation: 3,
-      margin: const EdgeInsets.symmetric(vertical: 8.0),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: ExpansionTile(
-        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: statusColors[status] ?? Colors.grey,
-          child: Icon(Icons.receipt_long, color: Colors.white),
-        ),
-        title: Text(
-          'Pesanan #${order['id']}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text('Total: Rp ${order['total_harga']}'),
-            const SizedBox(height: 4),
-            Text(
-              status.toUpperCase(),
-              style: TextStyle(
-                color: statusColors[status],
-                fontWeight: FontWeight.bold,
-              ),
+     return Card(
+    elevation: 3,
+    margin: const EdgeInsets.symmetric(vertical: 8.0),
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    child: ExpansionTile(
+      tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: CircleAvatar(
+        backgroundColor: statusColors[status] ?? Colors.grey,
+        child: Icon(Icons.receipt_long, color: Colors.white),
+      ),
+      title: Text(
+        'Pesanan #${order['id']}',
+        style: const TextStyle(fontWeight: FontWeight.bold),
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 4),
+          Text('Total: Rp ${order['total_harga']}'),
+          const SizedBox(height: 4),
+          Text(
+            status.toUpperCase(),
+            style: TextStyle(
+              color: statusColors[status],
+              fontWeight: FontWeight.bold,
             ),
-          ],
-        ),
+          ),
+        ],
+      ),
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),

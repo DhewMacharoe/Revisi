@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('nama', 30);
             $table->string('telepon', 13)->nullable();
-            $table->string('email')->unique(); // Kolom email tetap ada dan unik
+            $table->string('email',50)->unique(); // Kolom email tetap ada dan unik
             $table->timestamps();
         });
     }
