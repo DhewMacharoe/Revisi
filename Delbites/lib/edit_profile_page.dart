@@ -1,5 +1,10 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
+const String baseUrl = 'http://127.0.0.1:8000'; // Pastikan ini sesuai
 
 class EditProfilePage extends StatefulWidget {
   const EditProfilePage({Key? key}) : super(key: key);
@@ -15,9 +20,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
   late TextEditingController _emailController;
 
   bool _isLoading = true;
-  String _initialNama = '';
-  String _initialTelepon = '';
-  String _initialEmail = '';
+  int? _pelangganId; // Tambahkan untuk menyimpan ID pelanggan
 
   @override
   void initState() {
@@ -30,38 +33,112 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> _loadCurrentProfileData() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _initialNama = prefs.getString('nama_pelanggan') ?? '';
-      _initialTelepon = prefs.getString('telepon_pelanggan') ?? '';
-      _initialEmail = prefs.getString('email_pelanggan') ?? '';
-
-      _namaController.text = _initialNama;
-      _teleponController.text = _initialTelepon;
-      _emailController.text = _initialEmail;
-      _isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        _pelangganId = prefs.getInt('id_pelanggan'); // Ambil ID pelanggan
+        _namaController.text = prefs.getString('nama_pelanggan') ?? '';
+        _teleponController.text = prefs.getString('telepon_pelanggan') ?? '';
+        _emailController.text = prefs.getString('email_pelanggan') ?? '';
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _saveProfileChanges() async {
     if (_formKey.currentState!.validate()) {
+      if (_pelangganId == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+                content: Text(
+                    'ID Pelanggan tidak ditemukan. Tidak dapat menyimpan.'),
+                backgroundColor: Colors.red),
+          );
+        }
+        return;
+      }
+
       setState(() {
-        _isLoading = true; // Show loading indicator while saving
+        _isLoading = true;
       });
 
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('nama_pelanggan', _namaController.text);
-      await prefs.setString('telepon_pelanggan', _teleponController.text);
-      await prefs.setString('email_pelanggan', _emailController.text);
-
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Profil berhasil diperbarui!')),
+      try {
+        final response = await http.put(
+          Uri.parse(
+              '$baseUrl/api/pelanggan/${_pelangganId}'), // Endpoint PUT/PATCH
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode({
+            'nama': _namaController.text,
+            'telepon': _teleponController.text,
+            'email': _emailController.text,
+          }),
         );
-        Navigator.pop(
-            context, true); // Return true to indicate changes were made
+
+        if (response.statusCode == 200) {
+          final Map<String, dynamic> updatedData = jsonDecode(response.body);
+          // Perbarui SharedPreferences dengan data terbaru dari API
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('nama_pelanggan', updatedData['nama']);
+          await prefs.setString('telepon_pelanggan', updatedData['telepon']);
+          await prefs.setString('email_pelanggan', updatedData['email'] ?? '');
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                  content: Text('Profil berhasil diperbarui!'),
+                  backgroundColor: Colors.green),
+            );
+            Navigator.pop(context,
+                true); // Kembali dan beri tahu ProfilePage untuk refresh
+          }
+        } else {
+          String errorMessage = 'Gagal memperbarui profil.';
+          try {
+            final errorBody = jsonDecode(response.body);
+            if (errorBody['message'] != null) {
+              errorMessage = errorBody['message'];
+            } else if (errorBody['errors'] != null &&
+                errorBody['errors'] is Map) {
+              Map<String, dynamic> errors = errorBody['errors'];
+              StringBuffer messages = StringBuffer();
+              errors.forEach((key, value) {
+                if (value is List && value.isNotEmpty) {
+                  messages.writeln("${value[0]}");
+                }
+              });
+              if (messages.isNotEmpty)
+                errorMessage = messages.toString().trim();
+            }
+          } catch (e) {
+            // Jika respons bukan JSON atau ada error parsing
+            errorMessage = 'Gagal memperbarui profil: ${response.statusCode}';
+          }
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                  content: Text(errorMessage), backgroundColor: Colors.red),
+            );
+          }
+        }
+      } catch (e) {
+        print('Error saving profile data: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text('Terjadi kesalahan: $e'),
+                backgroundColor: Colors.red),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     }
   }
@@ -92,7 +169,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
               child: Form(
                 key: _formKey,
                 child: ListView(
-                  // Use ListView for scrollability if content overflows
                   children: [
                     TextFormField(
                       controller: _namaController,
@@ -121,7 +197,6 @@ class _EditProfilePageState extends State<EditProfilePage> {
                         if (value == null || value.isEmpty) {
                           return 'Nomor telepon tidak boleh kosong';
                         }
-                        // Basic phone validation (optional, can be more complex)
                         if (!RegExp(r'^[0-9\+\-\s]+$').hasMatch(value)) {
                           return 'Format nomor telepon tidak valid';
                         }

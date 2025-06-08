@@ -1,12 +1,17 @@
-import 'package:Delbites/edit_profile_page.dart'; // <-- Import halaman edit profil
-import 'package:Delbites/login_page.dart'; // Import halaman login baru
-import 'package:Delbites/main_screen.dart'; // Import MainScreen untuk navigasi setelah logout
-import 'package:Delbites/register_page.dart'; // Import halaman register baru
+import 'dart:convert';
+
+import 'package:Delbites/edit_profile_page.dart';
+import 'package:Delbites/login_page.dart';
+import 'package:Delbites/main_screen.dart';
+import 'package:Delbites/register_page.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+const String baseUrl = 'http://127.0.0.1:8000';
+
 class ProfilePage extends StatefulWidget {
-  final int idPelanggan; // ID pelanggan yang diterima dari HomePage
+  final int idPelanggan;
 
   const ProfilePage({Key? key, required this.idPelanggan}) : super(key: key);
 
@@ -19,44 +24,110 @@ class _ProfilePageState extends State<ProfilePage> {
   String _telepon = 'Memuat...';
   String _email = 'Memuat...';
   bool _isLoading = true;
-  bool _isLoggedIn = false; // Status login
+  bool _isLoggedIn = false;
 
   @override
   void initState() {
     super.initState();
-    _loadProfileData(); // Memuat data profil saat inisialisasi
+    _checkLoginStatusAndLoadProfile();
   }
 
-  // Fungsi untuk memuat data profil dari SharedPreferences
-  Future<void> _loadProfileData() async {
-    setState(() {
-      _isLoading = true; // Set loading true when reloading
-    });
+  Future<void> _checkLoginStatusAndLoadProfile() async {
     final prefs = await SharedPreferences.getInstance();
+    final int? storedId = prefs.getInt('id_pelanggan');
+    final bool? loggedInStatus = prefs.getBool('isLoggedIn');
+
     if (mounted) {
-      // Check if the widget is still in the tree
       setState(() {
-        _nama = prefs.getString('nama_pelanggan') ?? 'Belum tersedia';
-        _telepon = prefs.getString('telepon_pelanggan') ?? 'Belum tersedia';
-        _email = prefs.getString('email_pelanggan') ?? 'Belum tersedia';
-        _isLoggedIn = (prefs.getString('nama_pelanggan') != null &&
-                prefs.getString('nama_pelanggan')!.isNotEmpty) ||
-            (prefs.getInt('id_pelanggan') != null &&
-                prefs.getInt('id_pelanggan')! != 0);
-        _isLoading = false;
+        _isLoggedIn = (storedId != null && loggedInStatus == true);
       });
+    }
+
+    if (_isLoggedIn) {
+      await _fetchProfileDataFromApi(storedId!);
+    } else {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
-  // Fungsi untuk menghapus data pelanggan dari SharedPreferences (Logout)
+  Future<void> _fetchProfileDataFromApi(int idPelanggan) async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/pelanggan/$idPelanggan'),
+        headers: {'Accept': 'application/json'},
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        if (mounted) {
+          setState(() {
+            _nama = data['nama'] ?? 'Belum tersedia';
+            _telepon = data['telepon'] ?? 'Belum tersedia';
+            _email = data['email'] ?? 'Belum tersedia';
+          });
+          // Optional: Update SharedPreferences with latest data from API
+          // This serves as a cache, not the primary source of truth for display
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('nama_pelanggan', _nama);
+          await prefs.setString('telepon_pelanggan', _telepon);
+          await prefs.setString('email_pelanggan', _email);
+        }
+      } else {
+        // Fallback to SharedPreferences data if API call fails
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(
+                    'Failed to load profile from server: ${response.statusCode}'),
+                backgroundColor: Colors.red),
+          );
+        }
+        final prefs = await SharedPreferences.getInstance();
+        if (mounted) {
+          setState(() {
+            _nama = prefs.getString('nama_pelanggan') ?? 'Not available';
+            _telepon = prefs.getString('telepon_pelanggan') ?? 'Not available';
+            _email = prefs.getString('email_pelanggan') ?? 'Not available';
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('An error occurred while loading profile: $e'),
+              backgroundColor: Colors.red),
+        );
+      }
+      // Fallback to SharedPreferences data if error occurs
+      final prefs = await SharedPreferences.getInstance();
+      if (mounted) {
+        setState(() {
+          _nama = prefs.getString('nama_pelanggan') ?? 'Not available';
+          _telepon = prefs.getString('telepon_pelanggan') ?? 'Not available';
+          _email = prefs.getString('email_pelanggan') ?? 'Not available';
+        });
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   Future<void> _logout() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('id_pelanggan');
-    await prefs.remove('nama_pelanggan');
-    await prefs.remove('telepon_pelanggan');
-    await prefs.remove('email_pelanggan');
-    await prefs
-        .remove('isLoggedIn'); // Clear login status if you set it elsewhere
+    await prefs.clear();
 
     if (mounted) {
       Navigator.pushAndRemoveUntil(
@@ -67,16 +138,18 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  // Fungsi untuk navigasi ke halaman edit profil
   Future<void> _navigateToEditProfile() async {
     final result = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const EditProfilePage()),
     );
 
-    // Jika result adalah true, berarti ada perubahan yang disimpan
     if (result == true && mounted) {
-      _loadProfileData(); // Muat ulang data profil untuk menampilkan perubahan
+      final prefs = await SharedPreferences.getInstance();
+      final int? storedId = prefs.getInt('id_pelanggan');
+      if (storedId != null) {
+        _fetchProfileDataFromApi(storedId);
+      }
     }
   }
 
@@ -118,7 +191,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (context) => const LoginPage()),
-                              ).then((_) => _loadProfileData());
+                              ).then((_) => _checkLoginStatusAndLoadProfile());
                             },
                             icon: const Icon(Icons.login, color: Colors.white),
                             label: const Text('Login',
@@ -141,7 +214,7 @@ class _ProfilePageState extends State<ProfilePage> {
                                 context,
                                 MaterialPageRoute(
                                     builder: (context) => const RegisterPage()),
-                              ).then((_) => _loadProfileData());
+                              ).then((_) => _checkLoginStatusAndLoadProfile());
                             },
                             icon: const Icon(Icons.app_registration,
                                 color: Colors.white),
@@ -159,11 +232,9 @@ class _ProfilePageState extends State<ProfilePage> {
                         const SizedBox(height: 20),
                       ],
                     )
-                  else // Jika sudah login, tampilkan detail profil
+                  else
                     Expanded(
-                      // Use Expanded to make the Column scrollable if content overflows
                       child: ListView(
-                        // Changed Column to ListView for potential overflow
                         children: [
                           Card(
                             margin: const EdgeInsets.symmetric(vertical: 8.0),
@@ -196,7 +267,6 @@ class _ProfilePageState extends State<ProfilePage> {
                             ),
                           ),
                           const SizedBox(height: 20),
-                          // Tombol Edit Profil
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(
@@ -205,8 +275,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               label: const Text('Edit Profil',
                                   style: TextStyle(color: Colors.white)),
                               style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    const Color(0xFF2D5EA2), // Blue color
+                                backgroundColor: const Color(0xFF2D5EA2),
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 12),
                                 shape: RoundedRectangleBorder(
@@ -215,8 +284,7 @@ class _ProfilePageState extends State<ProfilePage> {
                               ),
                             ),
                           ),
-                          const SizedBox(height: 10), // Space between buttons
-                          // Tombol Logout
+                          const SizedBox(height: 10),
                           SizedBox(
                             width: double.infinity,
                             child: ElevatedButton.icon(

@@ -1,13 +1,11 @@
 import 'dart:convert';
 
-// dart:io dan device_info_plus dihapus karena getDeviceId() dihilangkan
-
+import 'package:Delbites/main_screen.dart'; // Import MainScreen
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
-const String baseUrl =
-    'http://127.0.0.1:8000'; // Pastikan IP ini sesuai dengan server Anda
+const String baseUrl = 'http://127.0.0.1:8000';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -26,7 +24,6 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   void initState() {
     super.initState();
-    _loadExistingData();
   }
 
   @override
@@ -37,24 +34,8 @@ class _RegisterPageState extends State<RegisterPage> {
     super.dispose();
   }
 
-  Future<void> _loadExistingData() async {
-    // Fungsi ini dimaksudkan untuk memuat data jika ada registrasi yang belum selesai
-    // atau jika pengguna kembali ke halaman ini. Untuk registrasi baru murni,
-    // field biasanya kosong. Anda bisa mengosongkan controller di sini jika itu tujuannya.
-    // final prefs = await SharedPreferences.getInstance();
-    // if (mounted) {
-    //   setState(() {
-    //     _namaController.text = prefs.getString('nama_pelanggan_temp') ?? '';
-    //     _nomorController.text = prefs.getString('telepon_pelanggan_temp') ?? '';
-    //     _emailController.text = prefs.getString('email_pelanggan_temp') ?? '';
-    //   });
-    // }
-  }
-
   Future<int> _registerPelanggan(
       String nama, String telepon, String email) async {
-    final prefs = await SharedPreferences.getInstance();
-
     final createResponse = await http.post(
       Uri.parse('$baseUrl/api/pelanggan'),
       headers: {
@@ -77,12 +58,16 @@ class _RegisterPageState extends State<RegisterPage> {
             'ID pelanggan tidak ditemukan dalam response: ${createResponse.body}');
       }
 
-      await prefs.setInt('id_pelanggan',
-          id is String ? int.parse(id) : id); // Pastikan id adalah integer
+      final prefs = await SharedPreferences.getInstance();
+      await prefs
+          .clear(); // Bersihkan SharedPreferences sebelum menyimpan data user baru
+
+      await prefs.setInt('id_pelanggan', id is String ? int.parse(id) : id);
       await prefs.setString('nama_pelanggan', nama);
       await prefs.setString('telepon_pelanggan', telepon);
       await prefs.setString('email_pelanggan', email);
-      await prefs.setBool('isLoggedIn', true);
+      await prefs.setBool('isLoggedIn', true); // Set status login
+
       return id is String ? int.parse(id) : id;
     } else {
       String errorMessage = 'Gagal mendaftar pelanggan baru.';
@@ -91,13 +76,11 @@ class _RegisterPageState extends State<RegisterPage> {
         if (errorBody['message'] != null) {
           errorMessage = errorBody['message'];
         } else if (errorBody['errors'] != null && errorBody['errors'] is Map) {
-          // Handle Laravel validation errors
           Map<String, dynamic> errors = errorBody['errors'];
           StringBuffer messages = StringBuffer();
           errors.forEach((key, value) {
             if (value is List && value.isNotEmpty) {
-              messages.writeln(
-                  "${value[0]}"); // Ambil pesan error pertama untuk setiap field
+              messages.writeln("${value[0]}");
             }
           });
           if (messages.isNotEmpty) errorMessage = messages.toString().trim();
@@ -130,18 +113,23 @@ class _RegisterPageState extends State<RegisterPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-                content: Text('Registrasi berhasil!'),
+                content: Text('Registrasi berhasil! Anda telah login.'),
                 backgroundColor: Colors.green),
           );
-          Navigator.pop(context, true);
+          // Setelah registrasi berhasil dan login, arahkan ke MainScreen
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const MainScreen()),
+            (Route<dynamic> route) => false,
+          );
         }
       } catch (e) {
-        print('Error saving pelanggan data: $e'); // Untuk debugging di console
+        print('Error saving pelanggan data: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
                 content: Text(
-                    'Gagal registrasi: ${e.toString().replaceFirst("Exception: ", "")}'), // Menampilkan pesan error yang lebih bersih
+                    'Gagal registrasi: ${e.toString().replaceFirst("Exception: ", "")}'),
                 backgroundColor: Colors.red),
           );
         }
@@ -201,7 +189,6 @@ class _RegisterPageState extends State<RegisterPage> {
                         if (value == null || value.trim().isEmpty) {
                           return 'Nomor HP wajib diisi';
                         }
-                        // Validasi sederhana untuk nomor telepon Indonesia (opsional)
                         if (!RegExp(r'^08[0-9]{8,11}$')
                             .hasMatch(value.trim())) {
                           return 'Format nomor HP tidak valid. Contoh: 081234567890';
@@ -223,8 +210,8 @@ class _RegisterPageState extends State<RegisterPage> {
                         if (value == null || value.trim().isEmpty) {
                           return 'Email wajib diisi';
                         }
-                        final emailRegex = RegExp(
-                            r'^[^@\s]+@[^@\s]+\.[^@\s]+$'); // Regex email yang lebih umum
+                        final emailRegex =
+                            RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
                         if (!emailRegex.hasMatch(value.trim())) {
                           return 'Format email tidak valid';
                         }

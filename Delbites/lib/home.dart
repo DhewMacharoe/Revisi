@@ -34,8 +34,68 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     checkOperationalStatus();
-    loadPelangganInfo();
+    loadPelangganInfo(); // Panggil di init
     fetchMenu();
+  }
+
+  // loadPelangganInfo kini hanya memuat dari SharedPreferences
+  Future<void> loadPelangganInfo() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      // Pastikan widget masih ada sebelum setState
+      setState(() {
+        idPelanggan = prefs.getInt('id_pelanggan');
+        namaPelanggan = prefs.getString('nama_pelanggan');
+      });
+    }
+  }
+
+  // PENTING: Fungsi ini yang akan dipanggil untuk memperbarui nama dari API
+  // mirip dengan bagaimana ProfilePage memuat data profil.
+  Future<void> _fetchAndSetPelangganNameFromApi() async {
+    final prefs = await SharedPreferences.getInstance();
+    final int? currentId = prefs.getInt('id_pelanggan');
+
+    if (currentId != null) {
+      try {
+        final response = await http.get(
+          Uri.parse('$baseUrl/api/pelanggan/$currentId'),
+          headers: {'Accept': 'application/json'},
+        );
+
+        if (response.statusCode == 200) {
+          final Map<String, dynamic> data = jsonDecode(response.body);
+          if (mounted) {
+            setState(() {
+              namaPelanggan = data['nama'] ?? 'Pengguna'; // Perbarui nama
+            });
+            // Opsional: Perbarui SharedPreferences dengan nama terbaru
+            await prefs.setString('nama_pelanggan', namaPelanggan!);
+          }
+        } else {
+          // Jika gagal fetch dari API, coba fallback ke SharedPreferences
+          if (mounted) {
+            setState(() {
+              namaPelanggan = prefs.getString('nama_pelanggan') ?? 'Pengguna';
+            });
+          }
+        }
+      } catch (e) {
+        // Jika ada error, coba fallback ke SharedPreferences
+        if (mounted) {
+          setState(() {
+            namaPelanggan = prefs.getString('nama_pelanggan') ?? 'Pengguna';
+          });
+        }
+        print('Error fetching updated name from API: $e');
+      }
+    } else {
+      if (mounted) {
+        setState(() {
+          namaPelanggan = null; // Jika ID tidak ada, anggap tidak login
+        });
+      }
+    }
   }
 
   Future<void> checkOperationalStatus() async {
@@ -50,7 +110,6 @@ class _HomePageState extends State<HomePage> {
         });
 
         if (!isTokoBuka) {
-          // Tampilkan dialog atau SnackBar jika toko tutup
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -64,22 +123,12 @@ class _HomePageState extends State<HomePage> {
         }
       }
     } catch (e) {
-      // Gagal menghubungi server, anggap saja buka untuk sementara
-      // atau tampilkan pesan error koneksi
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Gagal memeriksa status toko.')),
         );
       }
     }
-  }
-
-  Future<void> loadPelangganInfo() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      idPelanggan = prefs.getInt('id_pelanggan');
-      namaPelanggan = prefs.getString('nama_pelanggan');
-    });
   }
 
   Future<void> fetchMenu() async {
@@ -210,7 +259,6 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        // Gradasi latar belakang utama untuk seluruh halaman
         decoration: const BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
@@ -220,7 +268,6 @@ class _HomePageState extends State<HomePage> {
         ),
         child: Column(
           children: [
-            // Container baru untuk header dan search bar dengan gradasi gabungan
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -229,29 +276,19 @@ class _HomePageState extends State<HomePage> {
                   end: Alignment.bottomCenter,
                   colors: [
                     const Color(0xFF2D5EA2),
-                    const Color(0xFF2D5EA2)
-                        .withOpacity(0.95), // Sedikit lebih pekat
+                    const Color(0xFF2D5EA2).withOpacity(0.95),
                     const Color(0xFF2D5EA2).withOpacity(0.85),
                     const Color(0xFF2D5EA2).withOpacity(0.7),
-                    const Color(0xFF2D5EA2)
-                        .withOpacity(0.4), // Lebih transparan di bawah
-                    const Color(0xFF2D5EA2)
-                        .withOpacity(0.0), // Fading ke transparan
+                    const Color(0xFF2D5EA2).withOpacity(0.4),
+                    const Color(0xFF2D5EA2).withOpacity(0.0),
                   ],
-                  stops: const [
-                    0.0,
-                    0.25,
-                    0.5,
-                    0.75,
-                    0.9,
-                    1.0
-                  ], // Sesuaikan stop untuk blending
+                  stops: const [0.0, 0.25, 0.5, 0.75, 0.9, 1.0],
                 ),
               ),
               child: Column(
                 children: [
-                  _buildHeaderContent(), // Konten header (teks & ikon profil)
-                  _buildSearchBar(), // Search bar
+                  _buildHeaderContent(),
+                  _buildSearchBar(),
                 ],
               ),
             ),
@@ -271,30 +308,23 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  // Widget untuk konten header (tanpa Container gradasi luar)
   Widget _buildHeaderContent() {
     return SafeArea(
-      // SafeArea untuk bagian atas saja, karena search bar di bawahnya
-      bottom: false, // Tidak perlu SafeArea di bawah teks header ini
+      bottom: false,
       child: Padding(
-        padding: const EdgeInsets.only(
-            top: 20,
-            left: 20,
-            right: 20,
-            bottom: 10), // Sesuaikan padding jika perlu
+        padding:
+            const EdgeInsets.only(top: 20, left: 20, right: 20, bottom: 10),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          crossAxisAlignment:
-              CrossAxisAlignment.center, // Pusatkan ikon profil secara vertikal
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Flexible(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize
-                    .min, // Agar Column tidak mengambil tinggi berlebih
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Selamat Datang ${namaPelanggan ?? ''}\ndi DelBites',
+                    'Selamat Datang ${namaPelanggan ?? 'Pengguna'}\ndi DelBites', // Default "Pengguna" jika nama null
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Poppins',
@@ -313,12 +343,18 @@ class _HomePageState extends State<HomePage> {
                 final prefs = await SharedPreferences.getInstance();
                 final id = prefs.getInt('id_pelanggan');
                 if (mounted) {
+                  // Gunakan then() untuk menunggu hasil dari navigasi
+                  // dan muat ulang nama pelanggan setelah kembali
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => ProfilePage(idPelanggan: id ?? 0),
                     ),
-                  );
+                  ).then((_) {
+                    // Panggil fungsi untuk memperbarui nama pelanggan setelah kembali dari ProfilePage
+                    // Ini akan mengambil nama terbaru dari SharedPreferences (atau API jika di ProfilePage ada update ke Prefs)
+                    _fetchAndSetPelangganNameFromApi(); // Memuat ulang dari API untuk memastikan yang terbaru
+                  });
                 }
               },
             ),
@@ -330,9 +366,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildSearchBar() {
     return Padding(
-      // Padding search bar akan berada di dalam area gradasi
-      padding: const EdgeInsets.fromLTRB(16, 0, 16,
-          16), // Kurangi padding atas jika header sudah memberi jarak
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: TextField(
         controller: _searchController,
         onChanged: (query) {
@@ -353,15 +387,12 @@ class _HomePageState extends State<HomePage> {
                   })
               : null,
           filled: true,
-          fillColor: Colors.white.withOpacity(
-              0.9), // Buat sedikit transparan agar gradasi samar terlihat, atau tetap grey[200]
-          // fillColor: Colors.grey[200], // Alternatif jika ingin solid
+          fillColor: Colors.white.withOpacity(0.9),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(20),
             borderSide: BorderSide.none,
           ),
-          contentPadding: const EdgeInsets.symmetric(
-              vertical: 10.0), // Sesuaikan tinggi search bar
+          contentPadding: const EdgeInsets.symmetric(vertical: 10.0),
         ),
       ),
     );
@@ -370,8 +401,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildCategorySelector() {
     final categories = ["Rekomendasi", "makanan", "minuman"];
     return Padding(
-      padding: const EdgeInsets.symmetric(
-          horizontal: 10, vertical: 8), // Tambahkan sedikit vertical padding
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
