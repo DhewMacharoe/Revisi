@@ -1,9 +1,10 @@
 import 'dart:async';
 
-import 'package:Delbites/riwayat_pesanan.dart';
+import 'package:Delbites/main_screen.dart'; // Import MainScreen
 import 'package:flutter/material.dart';
 
 class WaitingPage extends StatefulWidget {
+  // Anda meneruskan 'orders' tapi tidak digunakan, ini tidak masalah.
   final List<Map<String, dynamic>> orders;
 
   const WaitingPage({Key? key, required this.orders}) : super(key: key);
@@ -14,8 +15,10 @@ class WaitingPage extends StatefulWidget {
 
 class _WaitingPageState extends State<WaitingPage> {
   int _counterBack = 5;
-  int _counterCancel = 300;
   late Timer _timerBack;
+  // Timer untuk pembatalan otomatis bisa di-handle di server,
+  // tapi untuk tampilan di UI, kita bisa tetap gunakan.
+  int _counterCancel = 300; // 5 menit
   late Timer _timerCancel;
   bool _isCanceled = false;
 
@@ -26,38 +29,63 @@ class _WaitingPageState extends State<WaitingPage> {
     _startCancelCountdown();
   }
 
+  @override
+  void dispose() {
+    _timerBack.cancel();
+    _timerCancel.cancel();
+    super.dispose();
+  }
+
   void _startCountdown() {
     _timerBack = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       if (_counterBack > 1) {
         setState(() {
           _counterBack--;
         });
       } else {
-        _timerBack.cancel();
-        _confirmOrder();
+        timer.cancel();
+        // Panggil fungsi navigasi yang benar
+        _goToHistoryPage();
       }
     });
   }
-
+  
   void _startCancelCountdown() {
     _timerCancel = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_counterCancel > 1) {
+       if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_counterCancel > 0) {
         setState(() {
           _counterCancel--;
         });
       } else {
-        _timerCancel.cancel();
-        _cancelOrder();
+        timer.cancel();
+        if (!_isCanceled) { // Hanya batalkan jika belum dibatalkan manual
+          _cancelOrder();
+        }
       }
     });
   }
 
-  void _confirmOrder() {
-    Navigator.pushReplacement(
+  // Fungsi untuk navigasi ke MainScreen di tab Riwayat Pesanan
+  void _goToHistoryPage() {
+    // Berdasarkan `main_screen.dart` Anda, RiwayatPesananPage ada di index 1
+    const int riwayatIndex = 1;
+
+    Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(
-        builder: (context) => const RiwayatPesananPage(),
+        // Buka MainScreen dan beritahu untuk memulai dari riwayatIndex
+        builder: (context) => const MainScreen(initialIndex: riwayatIndex),
       ),
+      // Hapus semua halaman sebelumnya agar pengguna tidak bisa kembali ke waiting page
+      (route) => false,
     );
   }
 
@@ -65,18 +93,21 @@ class _WaitingPageState extends State<WaitingPage> {
     setState(() {
       _isCanceled = true;
     });
-    _goBackToMain();
+    // Di sini Anda bisa menambahkan logika untuk update status pesanan ke API
+    // Setelah itu, arahkan ke halaman utama
+    _goToHomePage();
   }
 
-  void _goBackToMain() {
-    Navigator.of(context).popUntil((route) => route.isFirst);
-  }
-
-  @override
-  void dispose() {
-    _timerBack.cancel();
-    _timerCancel.cancel();
-    super.dispose();
+  // Fungsi untuk kembali ke Halaman Utama (Home)
+  void _goToHomePage() {
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        // Buka MainScreen dan mulai dari index 0 (Home)
+        builder: (context) => const MainScreen(initialIndex: 0),
+      ),
+      (route) => false,
+    );
   }
 
   @override
@@ -87,74 +118,52 @@ class _WaitingPageState extends State<WaitingPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(
-              Icons.hourglass_empty,
+            Icon(
+              _isCanceled ? Icons.cancel_outlined : Icons.hourglass_empty,
               size: 120,
-              color: Colors.black,
+              color: _isCanceled ? Colors.red.shade700 : Colors.black,
             ),
             const SizedBox(height: 20),
             Text(
               _isCanceled ? "Pesanan Dibatalkan" : "Mohon Menunggu",
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 10),
             Text(
               _isCanceled
                   ? "Maaf, pesanan Anda telah dibatalkan karena tidak dibayar dalam 5 menit."
-                  : "Silahkan bayar di kasir langsung ya teman Del",
+                  : "Silakan bayar di kasir langsung ya teman Del. Pesanan Anda sedang kami siapkan.",
               textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 16, color: Colors.grey.shade700),
             ),
-            const SizedBox(height: 10),
-            if (!_isCanceled)
-              const Text(
-                "Kami akan segera mengonfirmasi statusnya.\nTerima kasih telah memesan! 😊",
-                textAlign: TextAlign.center,
-              ),
             const SizedBox(height: 20),
             if (!_isCanceled)
-              Center(
-                child: Text(
-                  "Kembali ke halaman utama dalam $_counterBack detik...",
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+              Text(
+                "Mengarahkan ke Riwayat Pesanan dalam $_counterBack detik...",
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 16, color: Colors.black54),
               ),
             if (!_isCanceled) const SizedBox(height: 10),
-            // if (!_isCanceled)
-            //   Center(
-            //     child: Text(
-            //       "Pesanan akan dibatalkan dalam ${(_counterCancel ~/ 60)}:${(_counterCancel % 60).toString().padLeft(2, '0')} menit...",
-            //       style: const TextStyle(
-            //         fontSize: 16,
-            //         fontWeight: FontWeight.bold,
-            //         color: Colors.red,
-            //       ),
-            //       textAlign: TextAlign.center,
-            //     ),
-            //   ),
+            if (!_isCanceled)
+              Text(
+                "Pesanan akan batal otomatis dalam ${(_counterCancel ~/ 60).toString().padLeft(2, '0')}:${(_counterCancel % 60).toString().padLeft(2, '0')}",
+                style: const TextStyle(fontSize: 14, color: Colors.red),
+              ),
             const SizedBox(height: 40),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _goBackToMain,
+                onPressed: _goToHomePage,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      _isCanceled ? Colors.grey : const Color(0xFF2D5EA2),
+                  backgroundColor: const Color(0xFF2D5EA2),
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: Text(
-                  _isCanceled ? "Kembali ke Menu" : "Kembali Sekarang",
-                  style: const TextStyle(color: Colors.white, fontSize: 16),
+                child: const Text(
+                  "Kembali ke Menu Utama",
+                  style: TextStyle(color: Colors.white, fontSize: 16),
                 ),
               ),
             ),
