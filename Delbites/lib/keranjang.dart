@@ -263,9 +263,29 @@ class _KeranjangPageState extends State<KeranjangPage> {
                       icon:
                           const Icon(Icons.remove_circle, color: Colors.black),
                       onPressed: () {
-                        final updated = item['quantity'] - 1;
-                        _quantityControllers[index].text = updated.toString();
-                        _updateQuantity(index, updated);
+                        final int currentQuantity = item['quantity'];
+
+                        if (currentQuantity > 1) {
+                          // Jika jumlah lebih dari 1, kurangi seperti biasa.
+                          _updateQuantity(index, currentQuantity - 1);
+                        } else {
+                          // --- PERUBAHAN DI SINI ---
+                          // Jika jumlah sudah 1, tampilkan notifikasi.
+                          
+                          // Hapus snackbar yang mungkin sedang aktif agar tidak tumpang tindih
+                          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                          
+                          // Tampilkan snackbar dengan pesan gabungan
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Jumlah minimum adalah 1. Swipe ke kiri untuk menghapus.',
+                              ),
+                              behavior: SnackBarBehavior.floating, // Tampilan lebih modern
+                              duration: Duration(seconds: 3),
+                            ),
+                          );
+                        }
                       },
                     ),
                     SizedBox(
@@ -293,7 +313,6 @@ class _KeranjangPageState extends State<KeranjangPage> {
                       icon: const Icon(Icons.add_circle, color: Colors.black),
                       onPressed: () {
                         final updated = item['quantity'] + 1;
-                        _quantityControllers[index].text = updated.toString();
                         _updateQuantity(index, updated);
                       },
                     ),
