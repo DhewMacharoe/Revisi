@@ -6,13 +6,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'DelBites Admin')</title>
 
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 
-    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="icon" href="{{ asset('icon1.png') }}" type="image/png">
-    <!-- Custom CSS -->
     <style>
         body {
             font-family: 'Nunito', sans-serif;
@@ -71,7 +68,6 @@
 <body>
     <div class="container-fluid">
         <div class="row">
-            <!-- Sidebar -->
             <div class="col-md-3 col-lg-2 d-md-block sidebar collapse" id="sidebarMenu">
                 <div class="position-sticky pt-3">
                     <div class="d-flex align-items-center justify-content-center mb-4 p-3">
@@ -116,19 +112,24 @@
                                 <i class="fas fa-boxes"></i> Stok
                             </a>
                         </li>
+                        {{-- Ikon menu ini telah diubah --}}
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->is('jadwal-operasional*') ? 'active' : '' }}"
+                                href="{{ route('admin.jadwal.index') }}">
+                                <i class="fas fa-calendar-alt"></i> Jadwal Operasional
+                            </a>
+                        </li>   
                     </ul>
 
                     <hr>
 
                     <div class="text-center p-3 text-small">
-                       Copyright &copy; DelBites <span id="copyright-year"></span>
+                        Copyright &copy; DelBites <span id="copyright-year"></span>
                     </div>
                 </div>
             </div>
 
-            <!-- Main Content -->
             <div class="col-md-9 col-lg-10 content-wrapper ms-sm-auto px-md-4">
-                <!-- Top Navbar -->
                 <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom mb-4">
                     <div class="container-fluid">
                         <button class="navbar-toggler d-md-none" type="button" data-bs-toggle="collapse"
@@ -140,19 +141,6 @@
                         <span class="navbar-brand mb-0 h1">@yield('page-title', 'Dashboard')</span>
 
                         <div class="d-flex align-items-center">
-                            <!-- Notification Bell -->
-                            {{-- <div class="me-3">
-                                <a class="nav-link position-relative" href="{{ route('notifikasi.index') }}">
-                                    <i class="fas fa-bell"></i>
-                                    <span id="notificationCount"
-                                        class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                                        style="display:none;">
-                                        0
-                                    </span>
-                                </a>
-                            </div> --}}
-
-                            <!-- User Dropdown -->
                             <div class="dropdown p-2">
                                 <a href="#" class="d-flex align-items-center text-decoration-none"
                                     id="dropdownUserDetails" data-bs-toggle="dropdown" aria-expanded="false">
@@ -179,7 +167,6 @@
                         </div>
                     </div>
                 </nav>
-                <!-- Page Content -->
                 <main class="pb-5">
                     @yield('content')
                 </main>
@@ -187,10 +174,8 @@
         </div>
     </div>
 
-    <!-- Bootstrap JS + Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     @include('sweetalert::alert')
     @yield('scripts')

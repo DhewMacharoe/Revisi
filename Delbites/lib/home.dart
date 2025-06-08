@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:Delbites/profile.dart';
 import 'package:Delbites/services/menu_services.dart';
 import 'package:Delbites/widgets/menu_card.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 const String baseUrl = 'http://127.0.0.1:8000';
@@ -15,6 +18,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final TextEditingController _searchController = TextEditingController();
+  bool isTokoBuka = true;
+  String pesanToko = '';
 
   List<Map<String, String>> allItems = [];
   List<Map<String, String>> displayedItems = [];
@@ -28,8 +33,45 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    checkOperationalStatus();
     loadPelangganInfo();
     fetchMenu();
+  }
+
+  Future<void> checkOperationalStatus() async {
+    try {
+      final response =
+          await http.get(Uri.parse('$baseUrl/api/operasional/status'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        setState(() {
+          isTokoBuka = data['status'] == 'buka';
+          pesanToko = data['message'];
+        });
+
+        if (!isTokoBuka) {
+          // Tampilkan dialog atau SnackBar jika toko tutup
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(pesanToko),
+                duration: const Duration(seconds: 5),
+                behavior: SnackBarBehavior.floating,
+                margin: const EdgeInsets.all(20),
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      // Gagal menghubungi server, anggap saja buka untuk sementara
+      // atau tampilkan pesan error koneksi
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal memeriksa status toko.')),
+        );
+      }
+    }
   }
 
   Future<void> loadPelangganInfo() async {

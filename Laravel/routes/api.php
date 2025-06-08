@@ -10,6 +10,8 @@ use App\Http\Controllers\KeranjangController;
 use App\Http\Controllers\MidtransController;
 use App\Http\Controllers\DetailPemesananController;
 use App\Http\Controllers\LaporanController;
+use App\Http\Controllers\Admin\JadwalOperasionalController;
+
 
 // Menu routes
 Route::prefix('menu')->group(function () {
@@ -102,3 +104,5 @@ Route::prefix('midtrans')->group(function () {
     Route::get('/status/{orderId}', [MidtransController::class, 'checkStatus']);
     Route::post('/notification', [MidtransController::class, 'handleNotification']);
 });
+
+Route::get('/operasional/status', [JadwalOperasionalController::class, 'getStatus']);

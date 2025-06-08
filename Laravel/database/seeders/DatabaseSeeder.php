@@ -13,10 +13,9 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             AdminSeeder::class,
-            // PelangganSeeder::class,
             MenuSeeder::class,
             StokBahanSeeder::class,
-            // LaporanSeeder::class,
+            JadwalOperasionalSeeder::class,
         ]);
     }
 }

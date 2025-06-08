@@ -14,6 +14,7 @@ use App\Http\Controllers\NotifikasiController;
 use App\Events\NotifikasiEvent;
 use App\Models\Notifikasi;
 use App\Http\Controllers\PengaturanController;
+use App\Http\Controllers\Admin\JadwalOperasionalController;
 
 /*
 |--------------------------------------------------------------------------
@@ -65,29 +66,18 @@ Route::middleware(['auth:admin'])->group(function () {
         Route::get('/profil', [ProfilController::class, 'index'])->name('profil.index');
         Route::get('/profil/edit', [ProfilController::class, 'edit'])->name('profil.edit'); // TAMBAHKAN ROUTE INI
         Route::put('/profil', [ProfilController::class, 'update'])->name('profil.update');
+        Route::get('/jadwal-operasional', [JadwalOperasionalController::class, 'index'])->name('admin.jadwal.index');
+        Route::post('/jadwal-operasional/update', [JadwalOperasionalController::class, 'update'])->name('admin.jadwal.update');
     });
+});
 
-    Route::get('/pelanggan/by-telepon', [PelangganController::class, 'getByTelepon']);
+Route::get('/pelanggan/by-telepon', [PelangganController::class, 'getByTelepon']);
 
-    Route::get('/notifikasi', [NotifikasiController::class, 'index'])->name('notifikasi.index');
+Route::get('/notifikasi', [NotifikasiController::class, 'index'])->name('notifikasi.index');
 
-    Route::post('/kirim-notifikasi', function (\Illuminate\Http\Request $request) {
-        $request->validate([
-            'judul' => 'required|string',
-            'pesan' => 'required|string',
-        ]);
-
-        $notifikasi = Notifikasi::create([
-            'judul' => $request->judul,
-            'pesan' => $request->pesan,
-        ]);
-
-        broadcast(new NotifikasiEvent($notifikasi))->toOthers();
-
-        return response()->json(['success' => true]);
-    });
-    Route::get('/test-notifikasi', function () {
-        broadcast(new NotifikasiEvent('Pesanan baru telah masuk!'))->toOthers();
-        return 'Notifikasi terkirim';
-    });
+Route::post('/kirim-notifikasi', function (\Illuminate\Http\Request $request) {
+    $request->validate([
+        'judul' => 'required|string',
+        'pesan' => 'required|string',
+    ]);
 });
