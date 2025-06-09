@@ -189,4 +189,14 @@ class PemesananController extends Controller
             'timestamp' => now()->toDateTimeString(),
         ]);
     }
+
+    public function getFinishedOrderIds($pelangganId)
+    {
+        $finishedOrderIds = Pemesanan::where('id_pelanggan', $pelangganId)
+            ->where('status', 'selesai')
+            ->orderBy('created_at', 'desc') // Urutkan agar konsisten
+            ->pluck('id'); // Ambil hanya kolom 'id'
+
+        return response()->json(['order_ids' => $finishedOrderIds]);
+    }
 }

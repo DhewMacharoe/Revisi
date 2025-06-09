@@ -11,14 +11,12 @@ use Carbon\Carbon;
 
 class KeranjangController extends Controller
 {
-    // Menampilkan semua data keranjang dengan relasi
     public function index()
     {
         $keranjangs = Keranjang::with(['pelanggan', 'menu'])->get();
         return response()->json($keranjangs);
     }
 
-    // Menampilkan satu item keranjang berdasarkan ID
     public function show($id)
     {
         $keranjang = Keranjang::with(['pelanggan', 'menu'])->findOrFail($id);
@@ -43,7 +41,6 @@ class KeranjangController extends Controller
 
             Log::info('Validated data:', $validated);
 
-            // Check if item already exists in cart
             $existingItem = Keranjang::where('id_pelanggan', $validated['id_pelanggan'])
                 ->where('id_menu', $validated['id_menu'])
                 ->when($validated['kategori'] == 'minuman', function ($query) use ($validated) {
@@ -52,22 +49,16 @@ class KeranjangController extends Controller
                 ->first();
 
             if ($existingItem) {
-                // Increment quantity if item exists
                 $existingItem->increment('jumlah', $validated['jumlah']);
-
                 Log::info('Item quantity updated:', $existingItem->toArray());
-
                 return response()->json([
                     'message' => 'Jumlah item berhasil ditambah',
                     'data' => $existingItem
                 ], 200)->header('Content-Type', 'application/json');
             }
 
-            // Create new cart item
             $keranjang = Keranjang::create($validated);
-
             Log::info('New item created:', $keranjang->toArray());
-
             return response()->json([
                 'message' => 'Item berhasil ditambahkan ke keranjang',
                 'data' => $keranjang
@@ -87,12 +78,9 @@ class KeranjangController extends Controller
         }
     }
 
-
-    // Mengupdate item keranjang berdasarkan ID
     public function update(Request $request, $id)
     {
         $keranjang = Keranjang::findOrFail($id);
-
         $validated = $request->validate([
             'id_pelanggan' => 'sometimes|exists:pelanggan,id',
             'id_menu' => 'sometimes|exists:menu,id',
@@ -103,60 +91,57 @@ class KeranjangController extends Controller
             'suhu' => 'nullable|string|max:20',
             'catatan' => 'nullable|string|max:255',
         ]);
-
         $keranjang->update($validated);
         return response()->json($keranjang);
     }
 
-    // Menghapus satu item keranjang berdasarkan ID
     public function destroy($id)
     {
         $keranjang = Keranjang::findOrFail($id);
         $keranjang->delete();
-
         return response()->json(['message' => 'Item berhasil dihapus dari keranjang']);
     }
 
-    // Menghapus semua item keranjang berdasarkan ID pelanggan
     public function clearCart($id_pelanggan)
     {
         Keranjang::where('id_pelanggan', $id_pelanggan)->delete();
         return response()->json(['message' => 'Keranjang berhasil dikosongkan']);
     }
 
+    public function getCartItemCount($id_pelanggan)
+    {
+        try {
+            $count = Keranjang::where('id_pelanggan', $id_pelanggan)->count();
+            return response()->json(['count' => $count]);
+        } catch (\Exception $e) {
+            Log::error('Error getting cart item count: ' . $e->getMessage());
+            return response()->json(['message' => 'Gagal mendapatkan jumlah item keranjang'], 500);
+        }
+    }
 
-    /**
-     * Get cart items for a specific customer.
-     */
     public function getCartByCustomer($id_pelanggan)
     {
         $keranjangs = Keranjang::where('id_pelanggan', $id_pelanggan)
             ->with('menu')
             ->get();
-
-
         return response()->json($keranjangs);
     }
 
     public function checkout($id_pelanggan)
     {
         $keranjangs = Keranjang::where('id_pelanggan', $id_pelanggan)->get();
-
         if ($keranjangs->isEmpty()) {
             return response()->json(['message' => 'Keranjang kosong'], 400);
         }
-
         $totalHarga = $keranjangs->sum(function ($item) {
             return $item->harga * $item->jumlah;
         });
-
         $pemesanan = Pemesanan::create([
             'id_pelanggan' => $id_pelanggan,
             'total_harga' => $totalHarga,
             'status' => 'menunggu',
             'waktu_pemesanan' => Carbon::now(),
         ]);
-
         foreach ($keranjangs as $item) {
             DetailPemesanan::create([
                 'id_pemesanan' => $pemesanan->id,
@@ -165,26 +150,21 @@ class KeranjangController extends Controller
                 'harga_satuan' => $item->harga,
                 'subtotal' => $item->harga * $item->jumlah,
                 'catatan' => $item->catatan,
-                'suhu' => $item->suhu, // ✅ Suhu dimasukkan ke detail_pemesanan
-
+                'suhu' => $item->suhu,
             ]);
         }
-
         Keranjang::where('id_pelanggan', $id_pelanggan)->delete();
-
         return response()->json([
             'message' => 'Pemesanan berhasil dibuat',
             'pemesanan' => $pemesanan
         ], 201);
     }
 
-    // Tambahkan method baru untuk mendapatkan keranjang berdasarkan pelanggan
     public function getByPelanggan($id_pelanggan)
     {
         $keranjang = Keranjang::where('id_pelanggan', $id_pelanggan)
             ->with('menu')
             ->get();
-
         return response()->json($keranjang);
     }
 }
