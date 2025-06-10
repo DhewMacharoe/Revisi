@@ -1,16 +1,30 @@
 @extends('layouts.admin')
 
-@section('title', 'Tambah Produk - DelBites')
+@section('title', 'Tambah Menu - DelBites')
 
-@section('page-title', 'Tambah Produk')
+@section('page-title', 'Tambah Menu')
 
 @section('content')
+<style>
+    /* CSS untuk menghilangkan panah pada input angka */
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button {
+        display: none; /* Aturan paling penting */
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    input[type=number] {
+        -moz-appearance: textfield; /* Untuk Firefox */
+    }
+</style>
+
     <div class="container-fluid">
         <div class="row">
             <div class="col-md-12">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Form Tambah Produk</h5>
+                        <h5 class="mb-0">Form Tambah Menu</h5>
                     </div>
                     <div class="card-body">
                         <form action="{{ route('produk.store') }}" method="POST" enctype="multipart/form-data">
@@ -18,7 +32,7 @@
                             <div class="row mb-3">
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="nama_menu" class="form-label">Nama Produk <span
+                                        <label for="nama_menu" class="form-label">Nama Menu <span
                                                 class="text-danger">*</span></label>
                                         <input type="text" class="form-control @error('nama_menu') is-invalid @enderror"
                                             id="nama_menu" name="nama_menu" value="{{ old('nama_menu') }}" required>
@@ -68,7 +82,7 @@
 
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="gambar" class="form-label">Gambar Produk</label>
+                                        <label for="gambar" class="form-label">Gambar Menu</label>
                                         <input type="file" class="form-control @error('gambar') is-invalid @enderror"
                                             id="gambar" name="gambar" accept="image/jpeg,image/png,image/jpg">
                                         <small class="text-muted">Format: JPG, JPEG, PNG. Maks: 2MB</small>

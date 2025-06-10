@@ -83,7 +83,7 @@ class AuthController extends Controller
 
         if (!Hash::check($request->pin, $registrationPin->value)) {
             return back()->withErrors([
-                'pin' => 'PIN Registrasi yang Anda masukkan salah.',
+                'pin' => 'PIN Registrasi yang Anda masukkan salah, hubungi administrator untuk mendapatkan PIN yang benar.',
             ])->withInput();
         }
 

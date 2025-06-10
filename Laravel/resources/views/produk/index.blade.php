@@ -110,7 +110,7 @@
                                     @empty
                                         <tr>
                                             {{-- Pastikan colspan sesuai jumlah header (6) --}}
-                                            <td colspan="6" class="text-center">Tidak ada data produk</td>
+                                            <td colspan="6" class="text-center">Tidak ada data Menu</td>
                                         </tr>
                                     @endforelse
                                 </tbody>
@@ -151,7 +151,7 @@
                     event.preventDefault();
 
                     // PERBAIKAN 2: Ambil nama produk dari data-attribute yang sudah kita tambahkan
-                    const productName = this.dataset.namaProduk || "Produk ini"; // Fallback ke pesan umum
+                    const productName = this.dataset.namaProduk || "Menu ini"; // Fallback ke pesan umum
 
                     if (typeof Swal === 'undefined') {
                         console.error('SweetAlert (Swal) is not loaded!');
@@ -164,7 +164,7 @@
                     Swal.fire({
                         title: 'Apakah Anda yakin?',
                         // PERBAIKAN 3: Gunakan variabel productName di pesan
-                        text: "Produk '" + productName + "' akan dihapus dan tidak dapat dikembalikan!",
+                        text: "Menu '" + productName + "' akan dihapus dan tidak dapat dikembalikan!",
                         icon: 'warning',
                         showCancelButton: true,
                         confirmButtonColor: '#d33',

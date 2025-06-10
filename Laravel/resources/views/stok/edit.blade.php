@@ -4,6 +4,19 @@
 @section('page-title', 'Edit Stok Bahan')
 
 @section('content')
+<style>
+    /* CSS untuk menghilangkan panah pada input angka */
+    input[type=number]::-webkit-outer-spin-button,
+    input[type=number]::-webkit-inner-spin-button {
+        display: none; /* Aturan paling penting */
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    input[type=number] {
+        -moz-appearance: textfield; /* Untuk Firefox */
+    }
+</style>
 <div class="container-fluid">
     <div class="row justify-content-center">
         <div class="col-lg-8">

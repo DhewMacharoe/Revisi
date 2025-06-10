@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 
-@section('title', 'Detail Produk - DelBites')
-@section('page-title', 'Detail Produk')
+@section('title', 'Detail Menu - DelBites')
+@section('page-title', 'Detail Menu')
 
 {{-- Menyertakan SweetAlert2 CSS via CDN --}}
 @section('styles')
@@ -41,18 +41,18 @@
         <div class="col-md-8">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0">Informasi Produk</h5>
+                    <h5 class="mb-0">Informasi Menu</h5>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table table-borderless">
                             {{-- ... (detail produk lainnya tetap sama) ... --}}
                             <tr>
-                                <th width="200">ID Produk</th>
+                                <th width="200">ID Menu</th>
                                 <td>#{{ $produk->id }}</td>
                             </tr>
                             <tr>
-                                <th>Nama Produk</th>
+                                <th>Nama Menu</th>
                                 <td>{{ $produk->nama_menu }}</td>
                             </tr>
                             <tr>
@@ -131,7 +131,7 @@
                     if (typeof Swal === 'undefined') {
                         console.error('SweetAlert (Swal) is not loaded!');
                         // Fallback ke confirm browser biasa jika Swal tidak ada
-                        if (confirm("Produk '" + @json($produk->nama_menu) + "' akan dihapus. Lanjutkan? (SweetAlert gagal dimuat)")) {
+                        if (confirm("Menu '" + @json($produk->nama_menu) + "' akan dihapus. Lanjutkan? (SweetAlert gagal dimuat)")) {
                             this.submit();
                         }
                         return;
@@ -139,7 +139,7 @@
 
                     Swal.fire({
                         title: 'Apakah Anda yakin?',
-                        text: "Produk '" + @json($produk->nama_menu) + "' akan dihapus dan tidak dapat dikembalikan!",
+                        text: "Menu '" + @json($produk->nama_menu) + "' akan dihapus dan tidak dapat dikembalikan!",
                         icon: 'warning',
                         showCancelButton: true,
                         confirmButtonColor: '#d33',

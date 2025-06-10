@@ -136,7 +136,7 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                <div class="dropdown">
+                                                <div class="dropdown position-static">
                                                     <button class="btn btn-sm btn-light" type="button"
                                                         id="dropdownMenuButton{{ $p->id }}"
                                                         data-bs-toggle="dropdown" aria-expanded="false">
@@ -280,11 +280,16 @@
     </div>
 @endsection
 
-@section('scripts')
-@parent {{-- Jika ada script di layout utama yang ingin dipertahankan --}}
+ {{-- Jika ada script di layout utama yang ingin dipertahankan --}}
 {{-- Jika menggunakan CDN SweetAlert dan belum ada di layout utama, uncomment baris di bawah --}}
 {{-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css"> --}}
 {{-- <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script> --}}
+
+@section('scripts')
+@parent {{-- Jika ada script di layout utama yang ingin dipertahankan --}}
+{{-- Mengaktifkan CDN SweetAlert --}}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
 
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -376,7 +381,6 @@
             form.addEventListener('submit', function(event) {
                 event.preventDefault();
                 const currentForm = this;
-                const statusAction = currentForm.action;
                 const statusButton = currentForm.querySelector('button[type="submit"]');
                 const statusBaru = statusButton.dataset.statusBaru || "status baru"; // ambil dari data-attribute
 
@@ -385,6 +389,7 @@
                 let titleText = `Ubah status menjadi "${statusBaru}"?`;
                 let textMessage = "Pastikan Anda sudah melakukan tindakan yang sesuai.";
 
+                // Logika spesifik untuk tombol batalkan
                 if (form.classList.contains('form-batalkan')) {
                     confirmButtonColor = '#d33'; // merah untuk batalkan
                     confirmText = 'Ya, batalkan pesanan!';
@@ -392,15 +397,10 @@
                     textMessage = "Pesanan yang dibatalkan tidak dapat diubah kembali.";
                 }
 
-
-                // Pastikan Swal ada sebelum memanggilnya
-                if (typeof Swal === 'undefined') {
-                    console.error('SweetAlert (Swal) is not loaded!');
-                    if (confirm(`${titleText}\n${textMessage}`)) { // Fallback ke confirm browser
-                        currentForm.submit();
-                    }
-                    return;
-                }
+                // Logika spesifik untuk tombol tandai selesai (bisa ditambahkan jika perlu, namun default sudah cukup)
+                // if (statusBaru === 'Selesai') {
+                //     // kustomisasi jika perlu
+                // }
 
                 Swal.fire({
                     title: titleText,
@@ -408,7 +408,7 @@
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: confirmButtonColor,
-                    cancelButtonColor: '#6c757d', // abu-abu untuk batal
+                    cancelButtonColor: '#6c757d',
                     confirmButtonText: confirmText,
                     cancelButtonText: 'Tidak'
                 }).then((result) => {
