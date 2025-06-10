@@ -106,3 +106,5 @@ Route::prefix('midtrans')->group(function () {
 });
 
 Route::get('/operasional/status', [JadwalOperasionalController::class, 'getStatus']);
+Route::get('/keranjang/pelanggan/{id_pelanggan}/count', [KeranjangController::class, 'getCartItemCount']);
+Route::get('/pemesanan/pelanggan/{id}/finished-ids', [App\Http\Controllers\Api\PemesananController::class, 'getFinishedOrderIds']);
