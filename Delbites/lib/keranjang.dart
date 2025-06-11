@@ -1,14 +1,26 @@
 import 'dart:convert';
-
 import 'package:Delbites/checkout.dart';
 import 'package:Delbites/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+
+// Helper function untuk mengambil ID pelanggan dari SharedPreferences
+// Sama persis seperti di halaman riwayat pesanan
+Future<int?> _getPelangganId() async {
+  final prefs = await SharedPreferences.getInstance();
+  const String keyUntukId = 'id_pelanggan';
+  final dynamic idValue = prefs.get(keyUntukId);
+
+  if (idValue == null) return null;
+  if (idValue is int) return idValue;
+  if (idValue is String) return int.tryParse(idValue);
+  return null;
+}
 
 class KeranjangPage extends StatefulWidget {
-  final int idPelanggan;
-
-  const KeranjangPage({Key? key, required this.idPelanggan}) : super(key: key);
+  // [FIXED] Tidak perlu lagi `idPelanggan` di sini
+  const KeranjangPage({Key? key}) : super(key: key);
 
   @override
   State<KeranjangPage> createState() => _KeranjangPageState();
@@ -18,13 +30,16 @@ class _KeranjangPageState extends State<KeranjangPage> {
   List<Map<String, dynamic>> pesanan = [];
   bool isLoading = true;
   bool isError = false;
+  int? _idPelanggan; // [NEW] Variabel untuk menyimpan ID pelanggan yang login
+
   List<TextEditingController> _quantityControllers = [];
   List<FocusNode> _focusNodes = [];
 
   @override
   void initState() {
     super.initState();
-    _loadKeranjang();
+    // [CHANGED] Memanggil fungsi baru yang mengambil ID dulu
+    _loadUserDataAndCart();
   }
 
   @override
@@ -37,11 +52,36 @@ class _KeranjangPageState extends State<KeranjangPage> {
     }
     super.dispose();
   }
+  
+  // [NEW] Fungsi utama untuk memuat data
+  // Mengambil ID user dulu, baru memuat keranjang
+  Future<void> _loadUserDataAndCart() async {
+    final id = await _getPelangganId();
+
+    if (id == null) {
+      // Jika user tidak login, berhenti loading dan tampilkan keranjang kosong
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+      return;
+    }
+
+    // Jika user login, simpan ID-nya dan panggil _loadKeranjang
+    setState(() {
+      _idPelanggan = id;
+    });
+    _loadKeranjang();
+  }
 
   Future<void> _loadKeranjang() async {
+    // Pastikan ID pelanggan ada sebelum request ke API
+    if (_idPelanggan == null) return;
+
     try {
       final response = await http.get(Uri.parse(
-          'http://127.0.0.1:8000/api/keranjang/pelanggan/${widget.idPelanggan}'));
+          'http://127.0.0.1:8000/api/keranjang/pelanggan/$_idPelanggan'));
 
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
@@ -79,7 +119,6 @@ class _KeranjangPageState extends State<KeranjangPage> {
               }
             });
           }
-
           isLoading = false;
         });
       } else {
@@ -176,19 +215,20 @@ class _KeranjangPageState extends State<KeranjangPage> {
                 style: TextStyle(fontSize: 18)),
             const SizedBox(height: 10),
             ElevatedButton(
-              onPressed: _loadKeranjang,
+              onPressed: _loadUserDataAndCart,
               child: const Text('Coba Lagi'),
             ),
           ],
         ),
       );
     }
-
+    
+    // [CHANGED] Pesan yang ditampilkan jika keranjang kosong atau belum login
     if (pesanan.isEmpty) {
-      return const Center(
+      return Center(
         child: Text(
-          'Keranjang masih kosong',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          _idPelanggan == null ? 'Silakan login untuk melihat keranjang' : 'Keranjang masih kosong',
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
         ),
       );
     }
@@ -266,22 +306,16 @@ class _KeranjangPageState extends State<KeranjangPage> {
                         final int currentQuantity = item['quantity'];
 
                         if (currentQuantity > 1) {
-                          // Jika jumlah lebih dari 1, kurangi seperti biasa.
                           _updateQuantity(index, currentQuantity - 1);
                         } else {
-                          // --- PERUBAHAN DI SINI ---
-                          // Jika jumlah sudah 1, tampilkan notifikasi.
-                          
-                          // Hapus snackbar yang mungkin sedang aktif agar tidak tumpang tindih
                           ScaffoldMessenger.of(context).hideCurrentSnackBar();
                           
-                          // Tampilkan snackbar dengan pesan gabungan
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               content: Text(
                                 'Jumlah minimum adalah 1. Swipe ke kiri untuk menghapus.',
                               ),
-                              behavior: SnackBarBehavior.floating, // Tampilan lebih modern
+                              behavior: SnackBarBehavior.floating,
                               duration: Duration(seconds: 3),
                             ),
                           );
@@ -368,11 +402,12 @@ class _KeranjangPageState extends State<KeranjangPage> {
                     MaterialPageRoute(
                       builder: (_) => CheckoutPage(
                         pesanan: pesanan,
-                        idPelanggan: widget.idPelanggan,
+                        // [CHANGED] Menggunakan _idPelanggan dari state
+                        idPelanggan: _idPelanggan!, 
                         totalHarga: getTotalHarga(),
                       ),
                     ),
-                  ).then((_) => _loadKeranjang());
+                  ).then((_) => _loadUserDataAndCart());
                 },
                 child: Text(
                   'Rp${formatPrice(getTotalHarga())} - Checkout',

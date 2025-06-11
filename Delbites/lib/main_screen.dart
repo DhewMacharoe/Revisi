@@ -1,3 +1,5 @@
+// Salin dan ganti seluruh isi file main_screen.dart Anda dengan ini.
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -10,7 +12,14 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<int?> getPelangganId() async {
-  return 1;
+  final prefs = await SharedPreferences.getInstance();
+  const String keyUntukId = 'id_pelanggan';
+  final dynamic idValue = prefs.get(keyUntukId);
+
+  if (idValue == null) return null;
+  if (idValue is int) return idValue;
+  if (idValue is String) return int.tryParse(idValue);
+  return null;
 }
 
 class MainScreen extends StatefulWidget {
@@ -29,25 +38,23 @@ class _MainScreenState extends State<MainScreen> {
   int _historyNotificationCount = 0;
   Timer? _notificationTimer;
 
-  final List<Widget> _pages = [
-    const HomePage(),
-    const RiwayatPesananPage(),
-    FutureBuilder<int?>(
-      future: getPelangganId(),
-      builder: (context, snapshot) {
-        if (snapshot.hasData && snapshot.data != null) {
-          return KeranjangPage(idPelanggan: snapshot.data!);
-        }
-        return const Center(child: CircularProgressIndicator());
-      },
-    ),
-  ];
+  // [CHANGED] Deklarasikan _pages di sini, tapi inisialisasi di initState
+  late final List<Widget> _pages;
 
   @override
   void initState() {
     super.initState();
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: _currentIndex);
+    
+    // [CHANGED] Inisialisasi _pages di sini agar bisa meneruskan fungsi
+    _pages = [
+      const HomePage(),
+      // Berikan fungsi _fetchAllNotifications sebagai callback
+      RiwayatPesananPage(onStateUpdated: _fetchAllNotifications),
+      const KeranjangPage(),
+    ];
+    
     _fetchAllNotifications();
     _notificationTimer = Timer.periodic(const Duration(seconds: 15), (timer) {
       if (mounted) {
@@ -70,7 +77,12 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> _fetchHistoryBadgeStatus() async {
     final idPelanggan = await getPelangganId();
-    if (idPelanggan == null) return;
+    if (idPelanggan == null) {
+      if (mounted && _historyNotificationCount != 0) {
+        setState(() => _historyNotificationCount = 0);
+      }
+      return;
+    }
 
     try {
       final url = Uri.parse(
@@ -84,16 +96,14 @@ class _MainScreenState extends State<MainScreen> {
           (serverData['order_ids'] as List).map((id) => id.toString()));
 
       final prefs = await SharedPreferences.getInstance();
+      // Gunakan kunci yang sama persis seperti di riwayat_pesanan.dart
+      const String readFinishedOrdersKey = 'read_finished_order_ids_v2';
       final localReadIds = Set<String>.from(
-          prefs.getStringList('read_finished_order_ids') ?? []);
+          prefs.getStringList(readFinishedOrdersKey) ?? []);
 
-      // Logika inti tetap sama, yaitu mencari perbedaan
       final unreadIds = serverIds.difference(localReadIds);
-
-      // Simpan jumlahnya, bukan hanya true/false
       final int unreadCount = unreadIds.length;
-
-      // Perbarui state jika jumlahnya berubah
+      
       if (mounted && unreadCount != _historyNotificationCount) {
         setState(() {
           _historyNotificationCount = unreadCount;
@@ -106,7 +116,12 @@ class _MainScreenState extends State<MainScreen> {
 
   Future<void> _fetchCartItemCount() async {
     final idPelanggan = await getPelangganId();
-    if (idPelanggan == null) return;
+    if (idPelanggan == null) {
+      if (mounted && _cartItemCount != 0) {
+        setState(() => _cartItemCount = 0);
+      }
+      return;
+    }
 
     try {
       final url = Uri.parse(
@@ -128,13 +143,18 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   void _onTap(int index) {
+    // Jika pengguna pindah DARI tab riwayat, kita refresh notifikasi
+    // untuk memastikan lencana hilang jika sudah dibaca semua.
+    if (_currentIndex == 1 && index != 1) {
+      _fetchAllNotifications();
+    }
+    
     setState(() => _currentIndex = index);
     _pageController.animateToPage(
       index,
       duration: const Duration(milliseconds: 300),
       curve: Curves.easeInOut,
     );
-    _fetchAllNotifications();
   }
 
   Widget _buildHistoryIconWithBadge() {
@@ -142,7 +162,6 @@ class _MainScreenState extends State<MainScreen> {
       clipBehavior: Clip.none,
       children: [
         const Icon(Icons.receipt_long, size: 30, color: Colors.white),
-        // Tampilkan badge hanya jika jumlahnya lebih dari 0
         if (_historyNotificationCount > 0)
           Positioned(
             right: -6,
@@ -157,7 +176,6 @@ class _MainScreenState extends State<MainScreen> {
                 minWidth: 18,
                 minHeight: 18,
               ),
-              // Tambahkan Text untuk menampilkan angka
               child: Text(
                 '$_historyNotificationCount',
                 style: const TextStyle(

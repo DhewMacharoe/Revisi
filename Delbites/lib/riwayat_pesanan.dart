@@ -1,3 +1,5 @@
+// Salin dan ganti seluruh isi file riwayat_pesanan.dart Anda dengan ini.
+
 import 'dart:async';
 import 'dart:convert';
 
@@ -7,11 +9,21 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<int?> getPelangganId() async {
-  return 1;
+  final prefs = await SharedPreferences.getInstance();
+  const String keyUntukId = 'id_pelanggan';
+  final dynamic idValue = prefs.get(keyUntukId);
+
+  if (idValue == null) return null;
+  if (idValue is int) return idValue;
+  if (idValue is String) return int.tryParse(idValue);
+  return null;
 }
 
 class RiwayatPesananPage extends StatefulWidget {
-  const RiwayatPesananPage({Key? key}) : super(key: key);
+  // [NEW] Tambahkan callback agar bisa berkomunikasi dengan MainScreen
+  final VoidCallback? onStateUpdated;
+
+  const RiwayatPesananPage({Key? key, this.onStateUpdated}) : super(key: key);
 
   @override
   _RiwayatPesananPageState createState() => _RiwayatPesananPageState();
@@ -30,6 +42,10 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
   Map<int, double> tempRatings = {};
   Map<int, bool> submittedRatings = {};
 
+  bool _hasNewFinishedOrders = false;
+  Set<int> _unreadFinishedOrderIds = {};
+  static const String _readFinishedOrdersKey = 'read_finished_order_ids_v2';
+
   final List<String> statusList = [
     "menunggu",
     "diproses",
@@ -47,11 +63,13 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
   @override
   void initState() {
     super.initState();
+    _checkNewFinishedOrders();
     fetchOrders();
 
     _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
       if (mounted) {
         fetchOrders();
+        _checkNewFinishedOrders();
       }
     });
   }
@@ -62,42 +80,76 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
     super.dispose();
   }
 
-  Future<void> _acknowledgeFinishedOrders(List<dynamic> finishedOrders) async {
-    final newOrderIds =
-        finishedOrders.map((order) => order['id'].toString()).toSet();
-    if (newOrderIds.isEmpty) return;
+  Future<void> _checkNewFinishedOrders() async {
+    final idPelanggan = await getPelangganId();
+    if (idPelanggan == null) return;
 
     try {
+      final url = Uri.parse(
+          'http://127.0.0.1:8000/api/pemesanan/pelanggan/$idPelanggan/finished-ids');
+      final response = await http.get(url);
+      if (response.statusCode != 200) return;
+
+      final serverData = json.decode(response.body);
+      final serverIds =
+          (serverData['order_ids'] as List).map((id) => id as int).toSet();
+
       final prefs = await SharedPreferences.getInstance();
-      final existingReadIds =
-          (prefs.getStringList('read_finished_order_ids') ?? []).toSet();
+      final readIds =
+          (prefs.getStringList(_readFinishedOrdersKey) ?? []).map(int.parse).toSet();
 
-      existingReadIds.addAll(newOrderIds);
+      final unreadIds = serverIds.difference(readIds);
 
-      await prefs.setStringList(
-          'read_finished_order_ids', existingReadIds.toList());
+      if (mounted) {
+        setState(() {
+          _unreadFinishedOrderIds = unreadIds;
+          _hasNewFinishedOrders = unreadIds.isNotEmpty;
+        });
+      }
     } catch (e) {
       // Error handling
     }
   }
 
+  Future<void> _markOrderAsRead(int orderId) async {
+    if (!_unreadFinishedOrderIds.contains(orderId)) return;
+
+    final wasLastUnread = _unreadFinishedOrderIds.length == 1;
+
+    setState(() {
+      _unreadFinishedOrderIds.remove(orderId);
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    final readIds =
+        (prefs.getStringList(_readFinishedOrdersKey) ?? []).toSet();
+    readIds.add(orderId.toString());
+    await prefs.setStringList(_readFinishedOrdersKey, readIds.toList());
+
+    // [CHANGED] Panggil callback jika item terakhir yang belum dibaca sudah dibuka
+    // Ini akan memberitahu MainScreen untuk refresh lencananya
+    if (wasLastUnread) {
+       widget.onStateUpdated?.call();
+    }
+  }
+
+
   Future<void> fetchOrders() async {
+    final pelangganId = await getPelangganId();
+    if (pelangganId == null) {
+      if (!mounted) return;
+      setState(() {
+        isLoading = false;
+        orders.clear();
+      });
+      return;
+    }
+    
     if (orders.isEmpty) {
       setState(() => isLoading = true);
     }
 
     try {
-      final pelangganId = await getPelangganId();
-      if (pelangganId == null) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content:
-                  Text('ID Pelanggan tidak ditemukan. Silakan login kembali.')),
-        );
-        return;
-      }
-
       final uri = Uri.parse(
               'http://127.0.0.1:8000/api/pemesanan/pelanggan/$pelangganId')
           .replace(queryParameters: {
@@ -118,10 +170,6 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
             totalPages = data['last_page'] ?? 1;
             hasNextPage = currentPage < totalPages;
           });
-
-          if (selectedStatus == 'selesai' && orders.isNotEmpty) {
-            _acknowledgeFinishedOrders(orders);
-          }
         }
       } else {
         throw Exception('Gagal memuat pesanan. Status: ${response.statusCode}');
@@ -183,6 +231,7 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
         iconTheme: const IconThemeData(
           color: Colors.white,
         ),
+        automaticallyImplyLeading: false, // Menghilangkan tombol kembali
       ),
       body: Column(
         children: [
@@ -197,7 +246,7 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
       ),
     );
   }
-
+  
   Widget _buildStatusFilter() {
     return Container(
       height: 60,
@@ -208,25 +257,56 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
         itemCount: statusList.length,
         itemBuilder: (context, index) {
           final status = statusList[index];
+          final bool isSelesaiTabWithNotif =
+              status == 'selesai' && _hasNewFinishedOrders;
+
           return Padding(
             padding: EdgeInsets.only(
                 left: index == 0 ? 12.0 : 4.0,
                 right: index == statusList.length - 1 ? 12.0 : 4.0),
             child: ChoiceChip(
-              label: Text(
-                status.toUpperCase(),
-                style: TextStyle(
-                  color: selectedStatus == status
-                      ? Colors.white
-                      : statusColors[status],
-                  fontWeight: FontWeight.bold,
-                ),
+              label: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Padding( // Memberi ruang agar badge tidak terpotong
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Text(
+                      status.toUpperCase(),
+                      style: TextStyle(
+                        color: selectedStatus == status
+                            ? Colors.white
+                            : statusColors[status],
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  if (isSelesaiTabWithNotif)
+                    Positioned(
+                      top: -4,
+                      right: -8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
               ),
               selected: selectedStatus == status,
               selectedColor: statusColors[status],
               backgroundColor: Colors.grey[200],
               onSelected: (selected) {
                 if (selected) {
+                  if (status == 'selesai') {
+                    if (_hasNewFinishedOrders) {
+                      setState(() {
+                         _hasNewFinishedOrders = false;
+                      });
+                       widget.onStateUpdated?.call();
+                    }
+                  }
                   setState(() {
                     selectedStatus = status;
                     currentPage = 1;
@@ -268,24 +348,45 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
       ),
     );
   }
-
+  
   Widget _buildOrderCard(Map<String, dynamic> order) {
     final details = order['detail_pemesanan'] as List<dynamic>? ?? [];
     final status = order['status'].toString();
+    final orderId = order['id'] as int;
+    final bool isNew = _unreadFinishedOrderIds.contains(orderId);
 
     return Card(
       elevation: 3,
       margin: const EdgeInsets.symmetric(vertical: 8.0),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ExpansionTile(
+        onExpansionChanged: (isExpanded) {
+          if (isExpanded && isNew) {
+            _markOrderAsRead(orderId);
+          }
+        },
         tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         leading: CircleAvatar(
           backgroundColor: statusColors[status] ?? Colors.grey,
-          child: Icon(Icons.receipt_long, color: Colors.white),
+          child: const Icon(Icons.receipt_long, color: Colors.white),
         ),
-        title: Text(
-          'Pesanan #${order['id']}',
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        title: Row(
+          children: [
+            Text(
+              'Pesanan #${order['id']}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            if (isNew) ...[
+              const SizedBox(width: 8),
+              Chip(
+                label: const Text('BARU'),
+                labelStyle: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                backgroundColor: Colors.red,
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                visualDensity: VisualDensity.compact,
+              ),
+            ]
+          ],
         ),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
