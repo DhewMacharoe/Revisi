@@ -16,7 +16,8 @@ class PemesananController extends Controller
     // Tampilkan semua pesanan dengan detailnya
     public function index()
     {
-        return response()->json(Pemesanan::with('detailPemesanan')->get());
+        // [DIUBAH] Menambahkan relasi pelanggan untuk konsistensi
+        return response()->json(Pemesanan::with(['pelanggan', 'detailPemesanan.menu'])->get());
     }
 
     // Simpan pesanan baru beserta detailnya dan kirim notifikasi ke admin
@@ -76,7 +77,8 @@ class PemesananController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Pemesanan dan detail berhasil disimpan',
-                'data' => $pemesanan->load('detailPemesanan')
+                // [DIUBAH] Menambahkan relasi pelanggan di sini juga
+                'data' => $pemesanan->load(['pelanggan', 'detailPemesanan'])
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -91,7 +93,8 @@ class PemesananController extends Controller
     // Tampilkan pesanan berdasarkan id
     public function show(string $id)
     {
-        $pemesanan = Pemesanan::with('detailPemesanan')->find($id);
+        // [DIUBAH] Menambahkan relasi 'pelanggan' dan 'detailPemesanan.menu'
+        $pemesanan = Pemesanan::with(['pelanggan', 'detailPemesanan.menu'])->find($id);
         if (!$pemesanan) {
             return response()->json(['message' => 'Pemesanan tidak ditemukan'], 404);
         }
@@ -149,11 +152,18 @@ class PemesananController extends Controller
     {
         $status = $request->query('status');
 
-        $query = Pemesanan::with(['detailPemesanan.menu'])
+        // [DIUBAH] Menambahkan 'pelanggan' ke dalam eager loading
+        $query = Pemesanan::with(['pelanggan', 'detailPemesanan.menu'])
             ->where('id_pelanggan', $id);
 
         if ($status) {
-            $query->where('status', $status);
+            // Menangani jika status dikirim sebagai array (contoh: 'menunggu,pembayaran')
+            if(is_string($status) && str_contains($status, ',')) {
+                $statuses = explode(',', $status);
+                $query->whereIn('status', $statuses);
+            } else {
+                $query->where('status', $status);
+            }
         }
 
         $pesanan = $query->orderBy('created_at', 'desc')->paginate(10);
@@ -203,3 +213,4 @@ class PemesananController extends Controller
         return response()->json(['order_ids' => $finishedOrderIds]);
     }
 }
+

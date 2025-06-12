@@ -1,19 +1,22 @@
 import 'package:Delbites/main_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:timezone/data/latest.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter_localizations/flutter_localizations.dart'; // 1. Import
+import 'package:intl/date_symbol_data_local.dart'; // 2. Import
 
-void main() {
+void main() async { // Ubah menjadi async
+  // 3. Tambahkan 2 baris ini
   WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('id_ID', null);
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
 
-  tz.initializeTimeZones();
-  tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
+  // timezone initialization sudah tidak diperlukan di sini jika sudah diatur di tempat lain
+  // tz.initializeTimeZones();
+  // tz.setLocalLocation(tz.getLocation('Asia/Jakarta'));
 
   runApp(const MyApp());
 }
@@ -40,9 +43,19 @@ class _MyAppState extends State<MyApp> {
         primarySwatch: Colors.blue,
         fontFamily: 'Inter',
       ),
+      // 4. Tambahkan properti lokalisasi ini
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('id', 'ID'), // Tambahkan support untuk Bahasa Indonesia
+      ],
+      locale: const Locale('id', 'ID'), // Set default locale ke Indonesia
       home: const Stack(
         children: [
-          const MainScreen(),
+          MainScreen(),
         ],
       ),
     );

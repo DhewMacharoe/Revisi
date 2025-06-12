@@ -33,7 +33,11 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
-    checkOperationalStatus();
+    // Panggil checkOperationalStatus setelah frame pertama selesai dibangun
+    // agar ScaffoldMessenger punya context yang valid.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      checkOperationalStatus();
+    });
     loadPelangganInfo();
     fetchMenu();
   }
@@ -105,7 +109,7 @@ class _HomePageState extends State<HomePage> {
           isTokoBuka = isBuka;
           pesanToko = pesan;
         });
-        // SnackBar removal requested, so nothing here
+        // SnackBar sudah dihapus sesuai permintaan
       }
     } catch (e) {
       if (mounted) {
@@ -120,7 +124,8 @@ class _HomePageState extends State<HomePage> {
     setState(() => isLoading = true);
     try {
       allItems = await MenuService.fetchMenu();
-      allItems.sort((a, b) => (b['name'] ?? '').compareTo(a['name'] ?? ''));
+      // Sorting tidak lagi diperlukan di sini jika kategori default bukan rekomendasi
+      // allItems.sort((a, b) => (b['name'] ?? '').compareTo(a['name'] ?? ''));
 
       setState(() {
         filterCategory(selectedCategory, initialLoad: true);
@@ -277,7 +282,6 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-            // Persistent banner remains here
             if (!isTokoBuka)
               Container(
                 width: double.infinity,
@@ -396,8 +400,18 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // [DIUBAH] Logika untuk menampilkan nama kategori dengan huruf kapital
   Widget _buildCategorySelector() {
+    // Daftar kategori untuk logika filter (tetap huruf kecil)
     final categories = ["Rekomendasi", "makanan", "minuman"];
+    
+    // Map untuk menampilkan nama yang lebih baik di UI
+    final displayNames = {
+      "Rekomendasi": "Rekomendasi",
+      "makanan": "Makanan",
+      "minuman": "Minuman",
+    };
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       child: SingleChildScrollView(
@@ -405,8 +419,10 @@ class _HomePageState extends State<HomePage> {
         child: Row(
           children: categories
               .map((cat) => CategoryButton(
-                    label: cat,
+                    // Menggunakan nama dari displayNames untuk label
+                    label: displayNames[cat] ?? cat,
                     isSelected: selectedCategory == cat,
+                    // onTap tetap menggunakan nilai asli (huruf kecil) untuk filter
                     onTap: () => filterCategory(cat),
                   ))
               .toList(),
@@ -497,3 +513,4 @@ class CategoryButton extends StatelessWidget {
     );
   }
 }
+

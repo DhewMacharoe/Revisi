@@ -1,6 +1,10 @@
+// Salin dan ganti seluruh isi file riwayat_pesanan.dart Anda dengan ini.
+
 import 'dart:async';
 import 'dart:convert';
 
+// Import halaman struk yang baru dibuat
+import 'package:Delbites/struk_viewer_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:http/http.dart' as http;
@@ -342,9 +346,9 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
                       if (status == 'selesai') {
                         if (_hasNewFinishedOrders) {
                           setState(() {
-                            _hasNewFinishedOrders = false;
+                             _hasNewFinishedOrders = false;
                           });
-                          widget.onStateUpdated?.call();
+                           widget.onStateUpdated?.call();
                         }
                       }
                       setState(() {
@@ -508,6 +512,28 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
                       style:
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   ...details.map((detail) => _buildRatingItem(detail)),
+                  const SizedBox(height: 20),
+                  Center(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.print_outlined, color: Colors.white), // Ikon putih
+                      label: const Text('Cetak Struk'), // Teks akan putih karena style dari ElevatedButton
+                      style: ElevatedButton.styleFrom(
+                        foregroundColor: Colors.white, // [PENTING] Ini membuat teks dan ikon menjadi putih
+                        backgroundColor: const Color(0xFF2D5EA2),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => StrukViewerPage(order: order),
+                          ),
+                        );
+                      },
+                    ),
+                  )
                 ]
               ],
             ),

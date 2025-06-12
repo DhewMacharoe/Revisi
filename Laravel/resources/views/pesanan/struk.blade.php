@@ -72,7 +72,7 @@ Desa Sitoluama-Kec. Laguboti
 Kab. Tobasa, Sumatera Utara,
 Indonesia
 </p>
-        <p>Telp : (0632) 331234</p>
+        <p>Telp : (+62) 813 6091 2900</p>
         <p>================================</p>
         <h2>STRUK PESANAN</h2>
         <p>No: #ORD-{{ str_pad($pesanan->id, 3, '0', STR_PAD_LEFT) }}</p>
