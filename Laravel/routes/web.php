@@ -11,8 +11,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\StokController;
 use App\Http\Controllers\ProfilController;
 use App\Http\Controllers\NotifikasiController;
-use App\Events\NotifikasiEvent;
-use App\Models\Notifikasi;
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\PengaturanController;
 use App\Http\Controllers\Admin\JadwalOperasionalController;
 
@@ -43,6 +42,7 @@ Route::middleware(['auth:admin'])->group(function () {
     Route::put('/pesanan/batalkan/{id}', [PesananController::class, 'batalkanPesanan'])->name('pesanan.batalkan');
     Route::post('/pesanan/{id}/status/{status}', [PesananController::class, 'ubahStatus'])->name('pesanan.status');
     Route::post('/pesanan/update-status/{id}', [PesananController::class, 'updateStatus']);
+    Route::post('/pesanan/{pesanan}/update-status', [AdminController::class, 'updateStatus'])->name('pesanan.status');
 
     // Rute Produk (Menu)
     Route::resource('produk', ProdukController::class);

@@ -86,8 +86,13 @@ class _MenuDetailState extends State<MenuDetail> {
   String? selectedSuhu;
   final currencyFormatter = NumberFormat.decimalPattern('id');
 
-  double getBasePrice() {
-    return double.tryParse(widget.price) ?? 0.0;
+  // Modified getBasePrice to reflect the temperature selection
+  double getMenuPrice() {
+    double basePrice = double.tryParse(widget.price) ?? 0.0;
+    if (widget.kategori == 'minuman' && selectedSuhu == 'dingin') {
+      return basePrice + 2000; // Add 2000 for cold drinks
+    }
+    return basePrice;
   }
 
   Future<void> addToCart(int quantity, String? catatan) async {
@@ -116,7 +121,7 @@ class _MenuDetailState extends State<MenuDetail> {
         'kategori': widget.kategori,
         'suhu': selectedSuhu,
         'jumlah': quantity,
-        'harga': getBasePrice(),
+        'harga': getMenuPrice(), // Use getMenuPrice here
         'catatan': catatan ?? '',
       });
 
@@ -200,8 +205,10 @@ class _MenuDetailState extends State<MenuDetail> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.remove_circle,
-                              size: 32,),
+                          icon: const Icon(
+                            Icons.remove_circle,
+                            size: 32,
+                          ),
                           onPressed: decrement,
                         ),
                         const SizedBox(width: 16),
@@ -212,8 +219,10 @@ class _MenuDetailState extends State<MenuDetail> {
                         ),
                         const SizedBox(width: 16),
                         IconButton(
-                          icon: const Icon(Icons.add_circle,
-                              size: 32,),
+                          icon: const Icon(
+                            Icons.add_circle,
+                            size: 32,
+                          ),
                           onPressed: increment,
                         ),
                       ],
@@ -269,10 +278,8 @@ class _MenuDetailState extends State<MenuDetail> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      // [DIKEMBALIKAN] Menghapus bottomNavigationBar
-      // dan memindahkan tombol ke dalam body
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0), // Padding kembali normal
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -303,7 +310,8 @@ class _MenuDetailState extends State<MenuDetail> {
                 style:
                     const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
             const SizedBox(height: 10),
-            Text('Rp${currencyFormatter.format(getBasePrice())}',
+            // Display the dynamically calculated price
+            Text('Rp${currencyFormatter.format(getMenuPrice())}',
                 style: const TextStyle(fontSize: 18, color: Colors.grey)),
             const SizedBox(height: 10),
             const Text('Deskripsi:',
@@ -314,7 +322,11 @@ class _MenuDetailState extends State<MenuDetail> {
             if (widget.kategori == 'minuman')
               SuhuSelector(
                 selectedSuhu: selectedSuhu,
-                onSelected: (suhu) => setState(() => selectedSuhu = suhu),
+                onSelected: (suhu) {
+                  setState(() {
+                    selectedSuhu = suhu;
+                  });
+                },
               ),
             const SizedBox(height: 10),
             Row(
@@ -334,8 +346,6 @@ class _MenuDetailState extends State<MenuDetail> {
               direction: Axis.horizontal,
             ),
             const SizedBox(height: 20),
-
-            // [DIKEMBALIKAN] Tombol diletakkan kembali di sini
             ElevatedButton(
               key: const Key("add-to-cart-button"),
               onPressed: () {
@@ -353,11 +363,10 @@ class _MenuDetailState extends State<MenuDetail> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF4C53A5),
                 padding: const EdgeInsets.symmetric(vertical: 15),
-                // Bentuk dan ukuran akan mengikuti parent Column, tidak lagi mengisi layar
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10)),
               ),
-              child: const Center( // Center di sini agar teks tetap di tengah
+              child: const Center(
                 child: Text("Tambah ke Keranjang",
                     style: TextStyle(color: Colors.white, fontSize: 16)),
               ),

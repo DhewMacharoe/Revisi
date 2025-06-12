@@ -34,15 +34,13 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     checkOperationalStatus();
-    loadPelangganInfo(); // Panggil di init
+    loadPelangganInfo();
     fetchMenu();
   }
 
-  // loadPelangganInfo kini hanya memuat dari SharedPreferences
   Future<void> loadPelangganInfo() async {
     final prefs = await SharedPreferences.getInstance();
     if (mounted) {
-      // Pastikan widget masih ada sebelum setState
       setState(() {
         idPelanggan = prefs.getInt('id_pelanggan');
         namaPelanggan = prefs.getString('nama_pelanggan');
@@ -50,8 +48,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // PENTING: Fungsi ini yang akan dipanggil untuk memperbarui nama dari API
-  // mirip dengan bagaimana ProfilePage memuat data profil.
   Future<void> _fetchAndSetPelangganNameFromApi() async {
     final prefs = await SharedPreferences.getInstance();
     final int? currentId = prefs.getInt('id_pelanggan');
@@ -67,13 +63,11 @@ class _HomePageState extends State<HomePage> {
           final Map<String, dynamic> data = jsonDecode(response.body);
           if (mounted) {
             setState(() {
-              namaPelanggan = data['nama'] ?? 'Pengguna'; // Perbarui nama
+              namaPelanggan = data['nama'] ?? 'Pengguna';
             });
-            // Opsional: Perbarui SharedPreferences dengan nama terbaru
             await prefs.setString('nama_pelanggan', namaPelanggan!);
           }
         } else {
-          // Jika gagal fetch dari API, coba fallback ke SharedPreferences
           if (mounted) {
             setState(() {
               namaPelanggan = prefs.getString('nama_pelanggan') ?? 'Pengguna';
@@ -81,7 +75,6 @@ class _HomePageState extends State<HomePage> {
           }
         }
       } catch (e) {
-        // Jika ada error, coba fallback ke SharedPreferences
         if (mounted) {
           setState(() {
             namaPelanggan = prefs.getString('nama_pelanggan') ?? 'Pengguna';
@@ -92,56 +85,27 @@ class _HomePageState extends State<HomePage> {
     } else {
       if (mounted) {
         setState(() {
-          namaPelanggan = null; // Jika ID tidak ada, anggap tidak login
+          namaPelanggan = null;
         });
       }
     }
   }
 
-  // [MODIFIKASI DI SINI] Menambahkan warna pada SnackBar
   Future<void> checkOperationalStatus() async {
     try {
-      // Menggunakan endpoint dari kode Anda
       final response =
           await http.get(Uri.parse('$baseUrl/api/operasional/status'));
-          
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-        
-        // Menggunakan logika 'status' dari kode Anda
         final bool isBuka = data['status'] == 'buka';
         final String pesan = data['message'] ?? 'Status toko tidak diketahui.';
-        
+
         setState(() {
           isTokoBuka = isBuka;
           pesanToko = pesan;
         });
-
-        // Jika toko tidak buka, tampilkan SnackBar MERAH
-        if (!isTokoBuka) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                // [MODIFIKASI] Tambahkan properti ini untuk warna merah
-                backgroundColor: Colors.red.shade700,
-                content: Text(
-                  pesanToko,
-                  // [MODIFIKASI] Tambahkan style agar teks putih dan tebal
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                duration: const Duration(seconds: 5),
-                behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.all(10), // Margin sedikit lebih kecil
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-            );
-          }
-        }
+        // SnackBar removal requested, so nothing here
       }
     } catch (e) {
       if (mounted) {
@@ -313,6 +277,23 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
+            // Persistent banner remains here
+            if (!isTokoBuka)
+              Container(
+                width: double.infinity,
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+                color: Colors.red.shade700,
+                child: Text(
+                  pesanToko,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16.0,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ),
             _buildCategorySelector(),
             const SizedBox(height: 8),
             Expanded(
@@ -345,7 +326,7 @@ class _HomePageState extends State<HomePage> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Selamat Datang ${namaPelanggan ?? 'Pengguna'}\ndi DelBites', // Default "Pengguna" jika nama null
+                    'Selamat Datang ${namaPelanggan ?? 'Pengguna'}\ndi DelBites',
                     style: const TextStyle(
                       fontSize: 18,
                       fontFamily: 'Poppins',
@@ -364,17 +345,13 @@ class _HomePageState extends State<HomePage> {
                 final prefs = await SharedPreferences.getInstance();
                 final id = prefs.getInt('id_pelanggan');
                 if (mounted) {
-                  // Gunakan then() untuk menunggu hasil dari navigasi
-                  // dan muat ulang nama pelanggan setelah kembali
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => ProfilePage(idPelanggan: id ?? 0),
                     ),
                   ).then((_) {
-                    // Panggil fungsi untuk memperbarui nama pelanggan setelah kembali dari ProfilePage
-                    // Ini akan mengambil nama terbaru dari SharedPreferences (atau API jika di ProfilePage ada update ke Prefs)
-                    _fetchAndSetPelangganNameFromApi(); // Memuat ulang dari API untuk memastikan yang terbaru
+                    _fetchAndSetPelangganNameFromApi();
                   });
                 }
               },

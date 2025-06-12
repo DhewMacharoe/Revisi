@@ -62,4 +62,22 @@ class AdminController extends Controller
 
         return response()->json($appStatus);
     }
+
+    public function updateStatus(Request $request, \App\Models\Pemesanan $pesanan)
+    {
+        $newStatus = $request->input('status');
+        if ($newStatus === 'dibatalkan') {
+            $request->validate([
+                'catatan_pembatalan' => 'required|string|max:255'
+            ], [
+                'catatan_pembatalan.required' => 'Alasan pembatalan wajib diisi.'
+            ]);
+        }
+        $pesanan->status = $newStatus;
+        if ($newStatus === 'dibatalkan') {
+            $pesanan->catatan_pembatalan = $request->input('catatan_pembatalan');
+        }
+        $pesanan->save();
+        return back()->with('success', 'Status pesanan #' . $pesanan->id . ' berhasil diubah menjadi ' . ucfirst($newStatus));
+    }
 }

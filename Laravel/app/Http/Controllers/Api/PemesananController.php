@@ -112,14 +112,17 @@ class PemesananController extends Controller
             'status' => 'sometimes|in:menunggu,pembayaran,dibayar,diproses,selesai,dibatalkan',
             'waktu_pemesanan' => 'nullable|date',
             'waktu_pengambilan' => 'nullable|date',
+            'catatan_pembatalan' => 'nullable|string|max:255|required_if:status,dibatalkan',
         ]);
+        Log::info('Data received in PemesananController update:', $request->all());
 
         $pemesanan->update($request->only([
             'total_harga',
             'metode_pembayaran',
             'status',
             'waktu_pemesanan',
-            'waktu_pengambilan'
+            'waktu_pengambilan',
+            'catatan_pembatalan'
         ]));
 
         return response()->json([

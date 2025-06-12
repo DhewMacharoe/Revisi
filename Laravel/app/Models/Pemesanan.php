@@ -22,6 +22,7 @@ class Pemesanan extends Model
         'metode_pembayaran',
         'bukti_pembayaran',
         'status',
+        'catatan_pembatalan',
         'waktu_pemesanan',
         'waktu_pengambilan',
     ];
@@ -45,8 +46,10 @@ class Pemesanan extends Model
     {
         return $this->hasOne(Pembayaran::class, 'id_pemesanan');
     }
-    // app/Models/Pemesanan.php
     protected $casts = [
-        'status' => 'string', // atau enum jika menggunakan PHP 8.1+
+        'status' => 'string',
+        'total_harga' => 'decimal:2',
+        'waktu_pemesanan' => 'datetime',
+        'waktu_pengambilan' => 'datetime',
     ];
 }

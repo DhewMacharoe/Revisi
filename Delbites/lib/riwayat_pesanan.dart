@@ -60,13 +60,15 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
   };
 
   final Map<String, String> statusDescriptions = {
-    "menunggu": "Pesanan masih belum dibayarkan melalui kasir, silahkan bayar yaa...",
-    "pembayaran": "Status sudah masuk di pembayaran melalui online namun masih tahap pengecekan.",
+    "menunggu":
+        "Pesanan masih belum dibayarkan melalui kasir, silahkan bayar yaa...",
+    "pembayaran":
+        "Status sudah masuk di pembayaran melalui online namun masih tahap pengecekan.",
     "diproses": "Pesananmu sudah dibuat dan akan segera selesai.",
     "selesai": "Pesananmu sudah siap untuk diambil.",
-    "dibatalkan": "Pesanan gagal dilanjutkan karena kesalahan ataupun tidak dibayarkan."
+    "dibatalkan":
+        "Pesanan gagal dilanjutkan karena kesalahan ataupun tidak dibayarkan."
   };
-
 
   @override
   void initState() {
@@ -88,7 +90,6 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
     super.dispose();
   }
 
-  // [DIUBAH] Fungsi ini sekarang menampilkan semua informasi status sekaligus
   void _showAllStatusHelpDialog() {
     showDialog(
       context: context,
@@ -112,7 +113,9 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
                             fontSize: 16,
                           ),
                         ),
-                        TextSpan(text: entry.value, style: const TextStyle(height: 1.5)),
+                        TextSpan(
+                            text: entry.value,
+                            style: const TextStyle(height: 1.5)),
                       ],
                     ),
                   ),
@@ -148,8 +151,9 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
           (serverData['order_ids'] as List).map((id) => id as int).toSet();
 
       final prefs = await SharedPreferences.getInstance();
-      final readIds =
-          (prefs.getStringList(_readFinishedOrdersKey) ?? []).map(int.parse).toSet();
+      final readIds = (prefs.getStringList(_readFinishedOrdersKey) ?? [])
+          .map(int.parse)
+          .toSet();
 
       final unreadIds = serverIds.difference(readIds);
 
@@ -174,16 +178,14 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
     });
 
     final prefs = await SharedPreferences.getInstance();
-    final readIds =
-        (prefs.getStringList(_readFinishedOrdersKey) ?? []).toSet();
+    final readIds = (prefs.getStringList(_readFinishedOrdersKey) ?? []).toSet();
     readIds.add(orderId.toString());
     await prefs.setStringList(_readFinishedOrdersKey, readIds.toList());
 
     if (wasLastUnread) {
-       widget.onStateUpdated?.call();
+      widget.onStateUpdated?.call();
     }
   }
-
 
   Future<void> fetchOrders() async {
     final pelangganId = await getPelangganId();
@@ -195,7 +197,7 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
       });
       return;
     }
-    
+
     if (orders.isEmpty && mounted) {
       setState(() => isLoading = true);
     }
@@ -279,7 +281,6 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: const Color(0xFF2D5EA2),
-        // [DIUBAH] Menambahkan tombol aksi di AppBar
         actions: [
           IconButton(
             icon: const Icon(Icons.help_outline, color: Colors.white),
@@ -287,7 +288,7 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
             tooltip: 'Bantuan Status Pesanan',
           ),
         ],
-        automaticallyImplyLeading: false, 
+        automaticallyImplyLeading: false,
       ),
       body: Column(
         children: [
@@ -302,8 +303,7 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
       ),
     );
   }
-  
-  // [DIUBAH] Menghapus ikon bantuan dari setiap tombol
+
   Widget _buildStatusFilter() {
     return Container(
       height: 60,
@@ -342,9 +342,9 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
                       if (status == 'selesai') {
                         if (_hasNewFinishedOrders) {
                           setState(() {
-                             _hasNewFinishedOrders = false;
+                            _hasNewFinishedOrders = false;
                           });
-                           widget.onStateUpdated?.call();
+                          widget.onStateUpdated?.call();
                         }
                       }
                       setState(() {
@@ -402,7 +402,7 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
       ),
     );
   }
-  
+
   Widget _buildOrderCard(Map<String, dynamic> order) {
     final details = order['detail_pemesanan'] as List<dynamic>? ?? [];
     final status = order['status'].toString();
@@ -434,7 +434,10 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
               const SizedBox(width: 8),
               Chip(
                 label: const Text('BARU'),
-                labelStyle: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                labelStyle: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold),
                 backgroundColor: Colors.red,
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                 visualDensity: VisualDensity.compact,
@@ -468,6 +471,32 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
                     style: TextStyle(color: Colors.grey.shade700)),
                 Text('Metode: ${order['metode_pembayaran']}',
                     style: TextStyle(color: Colors.grey.shade700)),
+                if (status == 'dibatalkan' &&
+                    order['catatan_pembatalan'] != null &&
+                    (order['catatan_pembatalan'] as String).isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Alasan Pembatalan:',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.red.shade800,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '${order['catatan_pembatalan']}',
+                          style: TextStyle(
+                            fontStyle: FontStyle.italic,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: 16),
                 const Text('Detail Item:',
                     style:

@@ -19,7 +19,7 @@ class Kernel extends ConsoleKernel
 
         // --- TAMBAHKAN BARIS INI ---
         // Jalankan command 'orders:cancel-old' setiap menit.
-        $schedule->command('orders:cancel-old')->everyMinute();
+        $schedule->command('orders:cancel-pending')->daily();   
     }
 
     /**
@@ -29,7 +29,7 @@ class Kernel extends ConsoleKernel
      */
     protected function commands()
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }

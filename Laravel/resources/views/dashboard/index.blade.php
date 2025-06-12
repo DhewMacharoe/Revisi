@@ -119,10 +119,11 @@
                                                 @if ($pesanan->status === 'menunggu' || $pesanan->status === 'pembayaran')
                                                     {{-- [DIUBAH] Menambahkan class untuk SweetAlert --}}
                                                     <form
-                                                        action="{{ route('pesanan.status', ['id' => $pesanan->id, 'status' => 'diproses']) }}"
+                                                        action="{{ route('pesanan.status', ['pesanan' => $pesanan->id, 'status' => 'diproses']) }}"
                                                         method="POST" class="d-inline form-status-change">
                                                         @csrf
-                                                        <button type="submit" class="btn btn-sm btn-success" data-status-baru="Diproses">
+                                                        <button type="submit" class="btn btn-sm btn-success"
+                                                            data-status-baru="Diproses">
                                                             <i class="fas fa-check-circle"></i> Terima
                                                         </button>
                                                     </form>
@@ -130,12 +131,15 @@
 
                                                 {{-- [BARU] Menambahkan tombol Batalkan sesuai permintaan --}}
                                                 @if ($pesanan->status !== 'selesai' && $pesanan->status !== 'dibatalkan')
-                                                <form action="{{ route('pesanan.status', ['id' => $pesanan->id, 'status' => 'dibatalkan']) }}" method="POST" class="d-inline form-status-change form-batalkan">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-sm btn-danger" data-status-baru="Dibatalkan">
-                                                        <i class="fas fa-times-circle"></i> Batalkan
-                                                    </button>
-                                                </form>
+                                                    <form
+                                                        action="{{ route('pesanan.status', ['pesanan' => $pesanan->id, 'status' => 'dibatalkan']) }}"
+                                                        method="POST" class="d-inline form-status-change form-batalkan">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-sm btn-danger"
+                                                            data-status-baru="Dibatalkan">
+                                                            <i class="fas fa-times-circle"></i> Batalkan
+                                                        </button>
+                                                    </form>
                                                 @endif
                                             </td>
                                         </tr>
@@ -235,11 +239,11 @@
                                 </tr>
                             </thead>
                             <tbody id="detailPesananBody">
-                                </tbody>
+                            </tbody>
                         </table>
                     </div>
                     <div class="modal-footer" id="modalFooter">
-                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -250,7 +254,7 @@
     {{-- [BARU] Menambahkan link & script SweetAlert2 --}}
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
-    
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Script untuk modal detail (Tidak diubah)
@@ -284,12 +288,30 @@
                         document.getElementById('metodePembayaran').textContent = paymentMethods[data
                             .metode_pembayaran] || data.metode_pembayaran;
                         const statusBadges = {
-                            'menunggu': { class: 'bg-warning', text: 'Menunggu' },
-                            'pembayaran': { class: 'bg-info', text: 'Pembayaran' },
-                            'dibayar': { class: 'bg-primary', text: 'Dibayar' },
-                            'diproses': { class: 'bg-secondary', text: 'Diproses' },
-                            'selesai': { class: 'bg-success', text: 'Selesai' },
-                            'dibatalkan': { class: 'bg-danger', text: 'Dibatalkan' }
+                            'menunggu': {
+                                class: 'bg-warning',
+                                text: 'Menunggu'
+                            },
+                            'pembayaran': {
+                                class: 'bg-info',
+                                text: 'Pembayaran'
+                            },
+                            'dibayar': {
+                                class: 'bg-primary',
+                                text: 'Dibayar'
+                            },
+                            'diproses': {
+                                class: 'bg-secondary',
+                                text: 'Diproses'
+                            },
+                            'selesai': {
+                                class: 'bg-success',
+                                text: 'Selesai'
+                            },
+                            'dibatalkan': {
+                                class: 'bg-danger',
+                                text: 'Dibatalkan'
+                            }
                         };
                         const status = statusBadges[data.status] || {
                             class: 'bg-secondary',
@@ -364,7 +386,7 @@
                     });
             }
 
-            // [BARU] Script untuk konfirmasi SweetAlert
+            // [BARU] Script untuk konfirmasi SweetAlert dan input catatan pembatalan
             const statusChangeForms = document.querySelectorAll('.form-status-change');
             statusChangeForms.forEach(form => {
                 form.addEventListener('submit', function(event) {
@@ -377,12 +399,22 @@
                     let confirmText = `Ya, tandai ${statusBaru}!`;
                     let titleText = `Ubah status menjadi "${statusBaru}"?`;
                     let textMessage = "Pastikan Anda sudah melakukan tindakan yang sesuai.";
+                    let showInput = false;
+                    let inputPlaceholder = '';
+                    let inputValidator = null;
 
                     if (form.classList.contains('form-batalkan')) {
                         confirmButtonColor = '#d33';
                         confirmText = 'Ya, batalkan pesanan!';
                         titleText = 'Batalkan Pesanan Ini?';
                         textMessage = "Pesanan yang dibatalkan tidak dapat diubah kembali.";
+                        showInput = true;
+                        inputPlaceholder = 'Alasan pembatalan (wajib)';
+                        inputValidator = (value) => {
+                            if (!value) {
+                                return 'Alasan pembatalan tidak boleh kosong!';
+                            }
+                        };
                     }
 
                     Swal.fire({
@@ -393,9 +425,20 @@
                         confirmButtonColor: confirmButtonColor,
                         cancelButtonColor: '#6c757d',
                         confirmButtonText: confirmText,
-                        cancelButtonText: 'Tidak'
+                        cancelButtonText: 'Tidak',
+                        input: showInput ? 'text' : null,
+                        inputPlaceholder: inputPlaceholder,
+                        inputValidator: inputValidator
                     }).then((result) => {
                         if (result.isConfirmed) {
+                            if (showInput) {
+                                const hiddenInput = document.createElement('input');
+                                hiddenInput.type = 'hidden';
+                                hiddenInput.name =
+                                    'catatan_pembatalan';
+                                hiddenInput.value = result.value;
+                                currentForm.appendChild(hiddenInput);
+                            }
                             currentForm.submit();
                         }
                     });
