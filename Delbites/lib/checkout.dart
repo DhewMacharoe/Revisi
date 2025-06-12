@@ -176,7 +176,7 @@ Future<void> processPayment() async {
         'admin_id': null,
         'total_harga': grossAmount,
         'metode_pembayaran': 'transfer bank', // atau 'non-tunai'
-        'status': 'menunggu',
+        'status': 'pembayaran',
         'waktu_pengambilan': DateTime.now().toIso8601String(),
         'detail_pemesanan': buildDetailPemesanan(widget.pesanan),
       }),

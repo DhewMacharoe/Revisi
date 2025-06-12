@@ -87,7 +87,7 @@
                                         <th>Pelanggan</th>
                                         <th>Tanggal</th>
                                         <th>Total</th>
-                                        <th>Status</th>
+                                        <th>Status Pembayaran</th>
                                         <th class="text-center">Aksi</th>
                                     </tr>
                                 </thead>

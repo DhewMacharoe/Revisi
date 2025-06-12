@@ -1,5 +1,3 @@
-// Salin dan ganti seluruh isi file riwayat_pesanan.dart Anda dengan ini.
-
 import 'dart:async';
 import 'dart:convert';
 
@@ -20,7 +18,6 @@ Future<int?> getPelangganId() async {
 }
 
 class RiwayatPesananPage extends StatefulWidget {
-  // [NEW] Tambahkan callback agar bisa berkomunikasi dengan MainScreen
   final VoidCallback? onStateUpdated;
 
   const RiwayatPesananPage({Key? key, this.onStateUpdated}) : super(key: key);
@@ -48,6 +45,7 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
 
   final List<String> statusList = [
     "menunggu",
+    "pembayaran",
     "diproses",
     "selesai",
     "dibatalkan"
@@ -55,10 +53,20 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
 
   final Map<String, Color> statusColors = {
     "menunggu": Colors.amber.shade700,
+    "pembayaran": Colors.cyan.shade600,
     "diproses": Colors.blue.shade700,
     "selesai": Colors.green.shade700,
     "dibatalkan": Colors.red.shade700,
   };
+
+  final Map<String, String> statusDescriptions = {
+    "menunggu": "Pesanan masih belum dibayarkan melalui kasir, silahkan bayar yaa...",
+    "pembayaran": "Status sudah masuk di pembayaran melalui online namun masih tahap pengecekan.",
+    "diproses": "Pesananmu sudah dibuat dan akan segera selesai.",
+    "selesai": "Pesananmu sudah siap untuk diambil.",
+    "dibatalkan": "Pesanan gagal dilanjutkan karena kesalahan ataupun tidak dibayarkan."
+  };
+
 
   @override
   void initState() {
@@ -78,6 +86,51 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
   void dispose() {
     _timer?.cancel();
     super.dispose();
+  }
+
+  // [DIUBAH] Fungsi ini sekarang menampilkan semua informasi status sekaligus
+  void _showAllStatusHelpDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Informasi Status Pesanan'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: statusDescriptions.entries.map((entry) {
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: RichText(
+                    text: TextSpan(
+                      style: DefaultTextStyle.of(context).style,
+                      children: <TextSpan>[
+                        TextSpan(
+                          text: '${entry.key.toUpperCase()}\n',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: statusColors[entry.key] ?? Colors.black,
+                            fontSize: 16,
+                          ),
+                        ),
+                        TextSpan(text: entry.value, style: const TextStyle(height: 1.5)),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Mengerti'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _checkNewFinishedOrders() async {
@@ -126,8 +179,6 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
     readIds.add(orderId.toString());
     await prefs.setStringList(_readFinishedOrdersKey, readIds.toList());
 
-    // [CHANGED] Panggil callback jika item terakhir yang belum dibaca sudah dibuka
-    // Ini akan memberitahu MainScreen untuk refresh lencananya
     if (wasLastUnread) {
        widget.onStateUpdated?.call();
     }
@@ -145,7 +196,7 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
       return;
     }
     
-    if (orders.isEmpty) {
+    if (orders.isEmpty && mounted) {
       setState(() => isLoading = true);
     }
 
@@ -228,10 +279,15 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
         ),
         backgroundColor: const Color(0xFF2D5EA2),
-        iconTheme: const IconThemeData(
-          color: Colors.white,
-        ),
-        automaticallyImplyLeading: false, // Menghilangkan tombol kembali
+        // [DIUBAH] Menambahkan tombol aksi di AppBar
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline, color: Colors.white),
+            onPressed: _showAllStatusHelpDialog,
+            tooltip: 'Bantuan Status Pesanan',
+          ),
+        ],
+        automaticallyImplyLeading: false, 
       ),
       body: Column(
         children: [
@@ -247,6 +303,7 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
     );
   }
   
+  // [DIUBAH] Menghapus ikon bantuan dari setiap tombol
   Widget _buildStatusFilter() {
     return Container(
       height: 60,
@@ -264,57 +321,54 @@ class _RiwayatPesananPageState extends State<RiwayatPesananPage> {
             padding: EdgeInsets.only(
                 left: index == 0 ? 12.0 : 4.0,
                 right: index == statusList.length - 1 ? 12.0 : 4.0),
-            child: ChoiceChip(
-              label: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Padding( // Memberi ruang agar badge tidak terpotong
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Text(
-                      status.toUpperCase(),
-                      style: TextStyle(
-                        color: selectedStatus == status
-                            ? Colors.white
-                            : statusColors[status],
-                        fontWeight: FontWeight.bold,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                ChoiceChip(
+                  label: Text(
+                    status.toUpperCase(),
+                    style: TextStyle(
+                      color: selectedStatus == status
+                          ? Colors.white
+                          : statusColors[status],
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  selected: selectedStatus == status,
+                  selectedColor: statusColors[status],
+                  backgroundColor: Colors.grey[200],
+                  onSelected: (selected) {
+                    if (selected) {
+                      if (status == 'selesai') {
+                        if (_hasNewFinishedOrders) {
+                          setState(() {
+                             _hasNewFinishedOrders = false;
+                          });
+                           widget.onStateUpdated?.call();
+                        }
+                      }
+                      setState(() {
+                        selectedStatus = status;
+                        currentPage = 1;
+                        orders.clear();
+                      });
+                      fetchOrders();
+                    }
+                  },
+                ),
+                if (isSelesaiTabWithNotif)
+                  Positioned(
+                    top: -2,
+                    right: -2,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
                       ),
                     ),
                   ),
-                  if (isSelesaiTabWithNotif)
-                    Positioned(
-                      top: -4,
-                      right: -8,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              selected: selectedStatus == status,
-              selectedColor: statusColors[status],
-              backgroundColor: Colors.grey[200],
-              onSelected: (selected) {
-                if (selected) {
-                  if (status == 'selesai') {
-                    if (_hasNewFinishedOrders) {
-                      setState(() {
-                         _hasNewFinishedOrders = false;
-                      });
-                       widget.onStateUpdated?.call();
-                    }
-                  }
-                  setState(() {
-                    selectedStatus = status;
-                    currentPage = 1;
-                    orders.clear();
-                  });
-                  fetchOrders();
-                }
-              },
+              ],
             ),
           );
         },
