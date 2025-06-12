@@ -6,7 +6,6 @@
 
 @section('content')
     <div class="container-fluid">
-        <!-- Statistik -->
         <div class="row mb-4">
             <div class="col-md-3 mb-4">
                 <div class="card border-0 shadow-sm">
@@ -73,7 +72,6 @@
             </div>
         </div>
 
-        <!-- Pesanan Terbaru -->
         <div class="row">
             <div class="col-12 mb-4">
                 <div class="card border-0 shadow-sm">
@@ -118,26 +116,27 @@
                                                     <i class="fas fa-eye"></i> Detail
                                                 </button>
 
-                                                @if ($pesanan->status === 'menunggu')
+                                                @if ($pesanan->status === 'menunggu' || $pesanan->status === 'pembayaran')
+                                                    {{-- [DIUBAH] Menambahkan class untuk SweetAlert --}}
                                                     <form
                                                         action="{{ route('pesanan.status', ['id' => $pesanan->id, 'status' => 'diproses']) }}"
-                                                        method="POST" class="d-inline">
+                                                        method="POST" class="d-inline form-status-change">
                                                         @csrf
-                                                        <button type="submit" class="btn btn-sm btn-success">
-                                                            <i class="fas fa-check-circle"></i> Terima
-                                                        </button>
-                                                    </form>
-                                                @elseif ($pesanan->status === 'pembayaran')
-                                                    <form
-                                                        action="{{ route('pesanan.status', ['id' => $pesanan->id, 'status' => 'diproses']) }}"
-                                                        method="POST" class="d-inline">
-                                                        @csrf
-                                                        <button type="submit" class="btn btn-sm btn-success">
+                                                        <button type="submit" class="btn btn-sm btn-success" data-status-baru="Diproses">
                                                             <i class="fas fa-check-circle"></i> Terima
                                                         </button>
                                                     </form>
                                                 @endif
 
+                                                {{-- [BARU] Menambahkan tombol Batalkan sesuai permintaan --}}
+                                                @if ($pesanan->status !== 'selesai' && $pesanan->status !== 'dibatalkan')
+                                                <form action="{{ route('pesanan.status', ['id' => $pesanan->id, 'status' => 'dibatalkan']) }}" method="POST" class="d-inline form-status-change form-batalkan">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-danger" data-status-baru="Dibatalkan">
+                                                        <i class="fas fa-times-circle"></i> Batalkan
+                                                    </button>
+                                                </form>
+                                                @endif
                                             </td>
                                         </tr>
                                     @empty
@@ -155,7 +154,6 @@
             </div>
         </div>
 
-        <!-- Menu Terlaris -->
         <div class="row">
             <div class="col-12 mb-4">
                 <div class="card border-0 shadow-sm">
@@ -201,7 +199,6 @@
         </div>
     </div>
 
-    <!-- Modal Detail Pesanan -->
     <div class="modal fade" id="detailModal" tabindex="-1" aria-labelledby="detailModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -238,13 +235,11 @@
                                 </tr>
                             </thead>
                             <tbody id="detailPesananBody">
-                                <!-- Data akan diisi melalui JavaScript -->
-                            </tbody>
+                                </tbody>
                         </table>
                     </div>
                     <div class="modal-footer" id="modalFooter">
-                        <!-- Tombol akan diisi secara dinamis berdasarkan status -->
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
@@ -252,27 +247,26 @@
 @endsection
 
 @section('scripts')
+    {{-- [BARU] Menambahkan link & script SweetAlert2 --}}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Script untuk modal detail (Tidak diubah)
             const detailModal = document.getElementById('detailModal');
-
             detailModal.addEventListener('show.bs.modal', function(event) {
                 const button = event.relatedTarget;
                 const id = button.getAttribute('data-id');
                 const modalFooter = document.getElementById('modalFooter');
-
-                // Kosongkan footer modal terlebih dahulu
                 modalFooter.innerHTML =
                     '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>';
-
-                // Fetch detail pesanan dari server
                 fetch(`/pesanan/${id}`)
                     .then(response => {
                         if (!response.ok) throw new Error('Network response was not ok');
                         return response.json();
                     })
                     .then(data => {
-                        // Isi data ke dalam modal
                         document.getElementById('pesananId').textContent = data.id;
                         document.getElementById('idPelanggan').textContent = data.id_pelanggan;
                         document.getElementById('namaPelanggan').textContent = data.pelanggan.nama;
@@ -282,8 +276,6 @@
                             .created_at).toLocaleString('id-ID');
                         document.getElementById('totalHarga').textContent = 'Rp ' + new Intl
                             .NumberFormat('id-ID').format(data.total_harga);
-
-                        // Format metode pembayaran
                         const paymentMethods = {
                             'tunai': 'Tunai',
                             'qris': 'QRIS',
@@ -291,33 +283,13 @@
                         };
                         document.getElementById('metodePembayaran').textContent = paymentMethods[data
                             .metode_pembayaran] || data.metode_pembayaran;
-
-                        // Format status
                         const statusBadges = {
-                            'menunggu': {
-                                class: 'bg-warning',
-                                text: 'Menunggu'
-                            },
-                            'pembayaran': {
-                                class: 'bg-info',
-                                text: 'Pembayaran'
-                            },
-                            'dibayar': {
-                                class: 'bg-primary',
-                                text: 'Dibayar'
-                            },
-                            'diproses': {
-                                class: 'bg-secondary',
-                                text: 'Diproses'
-                            },
-                            'selesai': {
-                                class: 'bg-success',
-                                text: 'Selesai'
-                            },
-                            'dibatalkan': {
-                                class: 'bg-danger',
-                                text: 'Dibatalkan'
-                            }
+                            'menunggu': { class: 'bg-warning', text: 'Menunggu' },
+                            'pembayaran': { class: 'bg-info', text: 'Pembayaran' },
+                            'dibayar': { class: 'bg-primary', text: 'Dibayar' },
+                            'diproses': { class: 'bg-secondary', text: 'Diproses' },
+                            'selesai': { class: 'bg-success', text: 'Selesai' },
+                            'dibatalkan': { class: 'bg-danger', text: 'Dibatalkan' }
                         };
                         const status = statusBadges[data.status] || {
                             class: 'bg-secondary',
@@ -325,12 +297,10 @@
                         };
                         document.getElementById('statusPesanan').innerHTML =
                             `<span class="badge ${status.class}">${status.text}</span>`;
-
-                        // Isi tabel detail pesanan
                         const detailBody = document.getElementById('detailPesananBody');
                         detailBody.innerHTML = data.detail_pemesanan.map(detail => `
                             <tr>
-                                <td>${detail.menu.nama_menu}</td>
+                                <td>${detail.menu ? detail.menu.nama_menu : 'Menu Dihapus'}</td>
                                 <td>Rp ${new Intl.NumberFormat('id-ID').format(detail.harga_satuan)}</td>
                                 <td>${detail.jumlah}</td>
                                 <td>Rp ${new Intl.NumberFormat('id-ID').format(detail.subtotal)}</td>
@@ -338,8 +308,6 @@
                                 <td>${detail.catatan || '-'}</td>
                             </tr>
                         `).join('');
-
-                        // Tombol WhatsApp
                         const telepon = data.pelanggan.telepon.replace(/[^0-9]/g, '');
                         const formattedPhone = telepon.startsWith('0') ? '62' + telepon.substring(1) :
                             telepon;
@@ -353,14 +321,12 @@
                         };
                         const message =
                             `Halo ${data.pelanggan.nama},\n\nPesanan Anda di *DelBites*:\nTotal: Rp ${ new Intl.NumberFormat('id-ID').format(data.total_harga)}\nStatus: *${status.text}*\n\n${statusMessages[data.status] || `Status pesanan Anda: ${data.status}`}\n\nTerima kasih telah memesan.`;
-
                         modalFooter.innerHTML = `
                             <a href="https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}" 
                                class="btn btn-success me-2" target="_blank">
                                 <i class="fab fa-whatsapp"></i> Hubungi Pelanggan
                             </a>
                         `;
-
                         modalFooter.innerHTML +=
                             '<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>';
                     })
@@ -370,6 +336,7 @@
                     });
             });
 
+            // Script window.updateStatus (Tidak diubah, dibiarkan seperti aslinya)
             window.updateStatus = function(pesananId, status) {
                 fetch(`/pesanan/status/${pesananId}/${status}`, {
                         method: 'POST',
@@ -396,6 +363,44 @@
                         alert('Terjadi kesalahan saat memperbarui status pesanan');
                     });
             }
+
+            // [BARU] Script untuk konfirmasi SweetAlert
+            const statusChangeForms = document.querySelectorAll('.form-status-change');
+            statusChangeForms.forEach(form => {
+                form.addEventListener('submit', function(event) {
+                    event.preventDefault();
+                    const currentForm = this;
+                    const statusButton = currentForm.querySelector('button[type="submit"]');
+                    const statusBaru = statusButton.dataset.statusBaru || "status baru";
+
+                    let confirmButtonColor = '#3085d6';
+                    let confirmText = `Ya, tandai ${statusBaru}!`;
+                    let titleText = `Ubah status menjadi "${statusBaru}"?`;
+                    let textMessage = "Pastikan Anda sudah melakukan tindakan yang sesuai.";
+
+                    if (form.classList.contains('form-batalkan')) {
+                        confirmButtonColor = '#d33';
+                        confirmText = 'Ya, batalkan pesanan!';
+                        titleText = 'Batalkan Pesanan Ini?';
+                        textMessage = "Pesanan yang dibatalkan tidak dapat diubah kembali.";
+                    }
+
+                    Swal.fire({
+                        title: titleText,
+                        text: textMessage,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: confirmButtonColor,
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: confirmText,
+                        cancelButtonText: 'Tidak'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            currentForm.submit();
+                        }
+                    });
+                });
+            });
         });
     </script>
 @endsection

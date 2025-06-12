@@ -98,25 +98,46 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // [MODIFIKASI DI SINI] Menambahkan warna pada SnackBar
   Future<void> checkOperationalStatus() async {
     try {
+      // Menggunakan endpoint dari kode Anda
       final response =
           await http.get(Uri.parse('$baseUrl/api/operasional/status'));
+          
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+        
+        // Menggunakan logika 'status' dari kode Anda
+        final bool isBuka = data['status'] == 'buka';
+        final String pesan = data['message'] ?? 'Status toko tidak diketahui.';
+        
         setState(() {
-          isTokoBuka = data['status'] == 'buka';
-          pesanToko = data['message'];
+          isTokoBuka = isBuka;
+          pesanToko = pesan;
         });
 
+        // Jika toko tidak buka, tampilkan SnackBar MERAH
         if (!isTokoBuka) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(pesanToko),
+                // [MODIFIKASI] Tambahkan properti ini untuk warna merah
+                backgroundColor: Colors.red.shade700,
+                content: Text(
+                  pesanToko,
+                  // [MODIFIKASI] Tambahkan style agar teks putih dan tebal
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 duration: const Duration(seconds: 5),
                 behavior: SnackBarBehavior.floating,
-                margin: const EdgeInsets.all(20),
+                margin: const EdgeInsets.all(10), // Margin sedikit lebih kecil
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             );
           }
